@@ -433,6 +433,267 @@ nav {
     font-weight: bold;
 }
 
+/* Card Draw Presentation Section - iPad Optimized */
+.card-draw-container {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 15px;
+}
+
+.card-draw-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.card-draw-header h2 {
+    color: #4a5568;
+    margin: 0;
+    font-size: 2em;
+}
+
+.card-draw-status {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.draw-progress {
+    background: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-weight: bold;
+    color: #667eea;
+    border: 2px solid #667eea;
+    font-size: 16px;
+}
+
+.current-drawn-card-display {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.main-drawn-card {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto 30px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    border: 4px solid #333;
+}
+
+.card-placeholder {
+    aspect-ratio: 3/4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    color: #6c757d;
+    padding: 40px 20px;
+}
+
+.card-placeholder h3 {
+    margin: 0 0 10px 0;
+    font-size: 24px;
+}
+
+.card-placeholder p {
+    margin: 0;
+    font-size: 18px;
+}
+
+.drawn-card-display {
+    aspect-ratio: 3/4;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    position: relative;
+}
+
+.drawn-card-display img {
+    width: 100%;
+    height: 75%;
+    object-fit: cover;
+}
+
+.drawn-card-info {
+    padding: 15px;
+    text-align: center;
+    background: white;
+    height: 25%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.drawn-card-name {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 8px;
+    line-height: 1.2;
+}
+
+.drawn-card-number {
+    font-size: 20px;
+    color: #667eea;
+    font-weight: bold;
+}
+
+.draw-controls {
+    margin: 20px 0;
+}
+
+.btn-draw {
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+    color: white;
+    border: none;
+    padding: 20px 60px;
+    border-radius: 50px;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px rgba(56, 161, 105, 0.3);
+    min-height: 80px;
+    min-width: 200px;
+}
+
+.btn-draw:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(56, 161, 105, 0.4);
+}
+
+.btn-draw:active {
+    transform: translateY(-1px);
+}
+
+.btn-draw:disabled {
+    background: #cbd5e0;
+    color: #a0aec0;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.drawn-cards-history {
+    margin-top: 40px;
+}
+
+.drawn-cards-history h3 {
+    color: #4a5568;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    text-align: center;
+}
+
+.drawn-cards-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 15px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    background: white;
+    border-radius: 10px;
+    border: 2px solid #e2e8f0;
+}
+
+.history-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid #e2e8f0;
+    transition: transform 0.2s ease;
+    aspect-ratio: 3/4;
+    display: flex;
+    flex-direction: column;
+}
+
+.history-card:hover {
+    transform: scale(1.05);
+    border-color: #667eea;
+}
+
+.history-card img {
+    width: 100%;
+    height: 70%;
+    object-fit: cover;
+}
+
+.history-card-info {
+    padding: 8px;
+    text-align: center;
+    background: #f8f9fa;
+    height: 30%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.history-card-name {
+    font-size: 11px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 2px;
+    line-height: 1.1;
+}
+
+.history-card-number {
+    font-size: 10px;
+    color: #667eea;
+    font-weight: bold;
+}
+
+/* Fullscreen mode */
+.fullscreen-mode {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #1a202c;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.fullscreen-mode .card-draw-header {
+    color: white;
+    margin-bottom: 20px;
+}
+
+.fullscreen-mode .card-draw-header h2 {
+    color: white;
+}
+
+.fullscreen-mode .main-drawn-card {
+    max-width: 600px;
+    margin: auto;
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.fullscreen-mode .draw-controls {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.fullscreen-mode .drawn-cards-history {
+    display: none;
+}
+
 .deck-card .card-number {
     color: #667eea;
     font-size: 14px;
@@ -519,6 +780,103 @@ nav {
     .tabla {
         max-width: 500px;
     }
+    
+    /* Card Draw mobile adjustments */
+    .card-draw-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .main-drawn-card {
+        max-width: 400px;
+    }
+    
+    .btn-draw {
+        padding: 15px 40px;
+        font-size: 20px;
+        min-height: 70px;
+        min-width: 180px;
+    }
+    
+    .drawn-cards-list {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+}
+
+/* iPad-specific optimizations */
+@media (min-width: 768px) and (max-width: 1024px) {
+    /* Touch-friendly interface for tablets */
+    .nav-btn {
+        padding: 15px 25px;
+        font-size: 18px;
+        min-height: 60px;
+    }
+    
+    .btn {
+        min-height: 60px;
+        padding: 15px 30px;
+        font-size: 18px;
+    }
+    
+    .card-draw-container {
+        padding: 30px;
+    }
+    
+    .main-drawn-card {
+        max-width: 600px;
+    }
+    
+    .btn-draw {
+        padding: 25px 70px;
+        font-size: 28px;
+        min-height: 100px;
+        min-width: 250px;
+    }
+    
+    .drawn-card-name {
+        font-size: 28px;
+    }
+    
+    .drawn-card-number {
+        font-size: 24px;
+    }
+    
+    .card-draw-header h2 {
+        font-size: 2.5em;
+    }
+    
+    .draw-progress {
+        font-size: 18px;
+        padding: 12px 25px;
+    }
+}
+
+/* Landscape iPad optimization */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+    .card-draw-container {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 30px;
+        align-items: start;
+    }
+    
+    .card-draw-header {
+        grid-column: 1 / -1;
+    }
+    
+    .current-drawn-card-display {
+        margin-bottom: 0;
+    }
+    
+    .drawn-cards-history {
+        margin-top: 0;
+    }
+    
+    .drawn-cards-list {
+        max-height: 500px;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+}
 }
 
 /* Print Styles - Optimized for printing tablas */

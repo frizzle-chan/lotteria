@@ -3,6 +3,9 @@ class LoteriaGame {
     constructor() {
         this.cards = [];
         this.currentTabla = [];
+        this.drawnCards = [];
+        this.drawnCardsHistory = [];
+        this.isFullscreen = false;
         this.dbName = 'LoteriaDB';
         this.dbVersion = 1;
         this.db = null;
@@ -151,6 +154,7 @@ class LoteriaGame {
         document.getElementById('new-game-btn').addEventListener('click', () => this.newGame());
         document.getElementById('view-deck-btn').addEventListener('click', () => this.showDeckView());
         document.getElementById('print-cards-btn').addEventListener('click', () => this.showPrintCardsView());
+        document.getElementById('card-draw-btn').addEventListener('click', () => this.showCardDrawView());
 
         // Upload functionality
         document.getElementById('browse-btn').addEventListener('click', () => document.getElementById('file-input').click());
@@ -170,12 +174,32 @@ class LoteriaGame {
         // Print all cards controls
         document.getElementById('print-all-cards-btn').addEventListener('click', () => this.printAllCards());
 
+        // Card Draw controls
+        document.getElementById('draw-next-card-btn').addEventListener('click', () => this.drawNextCard());
+        document.getElementById('reset-draw-btn').addEventListener('click', () => this.resetCardDraw());
+        document.getElementById('fullscreen-btn').addEventListener('click', () => this.toggleFullscreen());
+
         // Modal controls
         document.getElementById('save-card-btn').addEventListener('click', () => this.saveCurrentCard());
         document.getElementById('cancel-card-btn').addEventListener('click', () => this.hideModal());
 
         // Deck management
         document.getElementById('clear-deck-btn').addEventListener('click', () => this.clearDeck());
+
+        // Keyboard shortcuts for card draw
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('card-draw-section').classList.contains('hidden')) return;
+            
+            if (e.code === 'Space' || e.code === 'Enter') {
+                e.preventDefault();
+                this.drawNextCard();
+            } else if (e.code === 'Escape') {
+                e.preventDefault();
+                if (this.isFullscreen) {
+                    this.toggleFullscreen();
+                }
+            }
+        });
     }
 
     // Show specific section and hide others
@@ -196,6 +220,8 @@ class LoteriaGame {
             document.getElementById('view-deck-btn').classList.add('active');
         } else if (sectionId === 'print-cards-section') {
             document.getElementById('print-cards-btn').classList.add('active');
+        } else if (sectionId === 'card-draw-section') {
+            document.getElementById('card-draw-btn').classList.add('active');
         }
     }
 
@@ -431,6 +457,162 @@ class LoteriaGame {
         setTimeout(() => {
             document.body.classList.remove('printing-cards');
         }, 1000);
+    }
+
+    // Show card draw view
+    showCardDrawView() {
+        this.showSection('card-draw-section');
+        this.updateCardDrawStatus();
+        this.renderDrawnCardsHistory();
+    }
+
+    // Draw next card for presentation
+    drawNextCard() {
+        if (this.cards.length === 0) {
+            alert('No cards available to draw. Please upload some cards first.');
+            return;
+        }
+
+        // Get available cards (not yet drawn)
+        const availableCards = this.cards.filter(card => 
+            !this.drawnCards.includes(card.id)
+        );
+
+        if (availableCards.length === 0) {
+            alert('All cards have been drawn! Click "Reset Draw" to start over.');
+            document.getElementById('draw-next-card-btn').disabled = true;
+            return;
+        }
+
+        // Pick random card from available cards
+        const randomIndex = Math.floor(Math.random() * availableCards.length);
+        const drawnCard = availableCards[randomIndex];
+
+        // Add to drawn cards
+        this.drawnCards.push(drawnCard.id);
+        this.drawnCardsHistory.unshift(drawnCard); // Add to beginning for most recent first
+
+        // Display the drawn card
+        this.displayDrawnCard(drawnCard);
+        
+        // Update status and history
+        this.updateCardDrawStatus();
+        this.renderDrawnCardsHistory();
+
+        // Announce the card (could add text-to-speech here)
+        console.log(`Card drawn: ${drawnCard.name} (#${drawnCard.number})`);
+    }
+
+    // Display the drawn card in the main area
+    displayDrawnCard(card) {
+        const mainDrawnCard = document.getElementById('main-drawn-card');
+        mainDrawnCard.innerHTML = `
+            <div class="drawn-card-display">
+                <img src="${card.image}" alt="${card.name}">
+                <div class="drawn-card-info">
+                    <div class="drawn-card-name">${card.name}</div>
+                    <div class="drawn-card-number">#${card.number}</div>
+                </div>
+            </div>
+        `;
+
+        // Add animation effect
+        mainDrawnCard.style.transform = 'scale(0.8)';
+        mainDrawnCard.style.opacity = '0';
+        
+        setTimeout(() => {
+            mainDrawnCard.style.transition = 'all 0.5s ease';
+            mainDrawnCard.style.transform = 'scale(1)';
+            mainDrawnCard.style.opacity = '1';
+        }, 100);
+    }
+
+    // Reset card draw session
+    resetCardDraw() {
+        if (confirm('Are you sure you want to reset the card draw? This will clear all drawn cards.')) {
+            this.drawnCards = [];
+            this.drawnCardsHistory = [];
+            
+            // Reset main display
+            const mainDrawnCard = document.getElementById('main-drawn-card');
+            mainDrawnCard.innerHTML = `
+                <div class="card-placeholder">
+                    <h3>Ready to start drawing cards</h3>
+                    <p>Click "Draw Card" to begin</p>
+                </div>
+            `;
+
+            // Re-enable draw button
+            document.getElementById('draw-next-card-btn').disabled = false;
+            
+            // Update status and clear history
+            this.updateCardDrawStatus();
+            this.renderDrawnCardsHistory();
+        }
+    }
+
+    // Update card draw status display
+    updateCardDrawStatus() {
+        const remainingCards = this.cards.length - this.drawnCards.length;
+        document.getElementById('cards-remaining').textContent = remainingCards;
+        
+        // Update draw button state
+        const drawButton = document.getElementById('draw-next-card-btn');
+        if (remainingCards === 0) {
+            drawButton.textContent = 'All Cards Drawn';
+            drawButton.disabled = true;
+        } else {
+            drawButton.textContent = 'Draw Card';
+            drawButton.disabled = false;
+        }
+    }
+
+    // Render drawn cards history
+    renderDrawnCardsHistory() {
+        const historyContainer = document.getElementById('drawn-cards-list');
+        historyContainer.innerHTML = '';
+
+        if (this.drawnCardsHistory.length === 0) {
+            historyContainer.innerHTML = '<p style="text-align: center; color: #718096;">No cards drawn yet</p>';
+            return;
+        }
+
+        this.drawnCardsHistory.forEach(card => {
+            const historyCard = document.createElement('div');
+            historyCard.className = 'history-card';
+            historyCard.innerHTML = `
+                <img src="${card.image}" alt="${card.name}">
+                <div class="history-card-info">
+                    <div class="history-card-name">${card.name}</div>
+                    <div class="history-card-number">#${card.number}</div>
+                </div>
+            `;
+            historyContainer.appendChild(historyCard);
+        });
+    }
+
+    // Toggle fullscreen mode
+    toggleFullscreen() {
+        const cardDrawSection = document.getElementById('card-draw-section');
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        
+        if (!this.isFullscreen) {
+            // Enter fullscreen
+            cardDrawSection.classList.add('fullscreen-mode');
+            fullscreenBtn.textContent = 'Exit Fullscreen';
+            this.isFullscreen = true;
+            
+            // Hide other UI elements
+            document.querySelector('header').style.display = 'none';
+        } else {
+            // Exit fullscreen
+            cardDrawSection.classList.remove('fullscreen-mode');
+            fullscreenBtn.textContent = 'Fullscreen';
+            this.isFullscreen = false;
+            
+            // Show other UI elements
+            document.querySelector('header').style.display = 'block';
+        }
     }
 
     // Render deck view

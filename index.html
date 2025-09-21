@@ -15,6 +15,7 @@
                 <button id="new-game-btn" class="nav-btn">Generate Tabla</button>
                 <button id="view-deck-btn" class="nav-btn">View Deck</button>
                 <button id="print-cards-btn" class="nav-btn">Print All Cards</button>
+                <button id="card-draw-btn" class="nav-btn">Card Draw</button>
             </nav>
         </header>
 
@@ -79,6 +80,44 @@
                     <button id="print-all-cards-btn" class="btn btn-primary">Print All Cards</button>
                 </div>
                 <div id="all-cards-grid" class="all-cards-grid"></div>
+            </section>
+
+            <!-- Card Draw Presentation Section -->
+            <section id="card-draw-section" class="section hidden">
+                <div class="card-draw-container">
+                    <!-- Header with controls -->
+                    <div class="card-draw-header">
+                        <h2>Card Draw - Game Master</h2>
+                        <div class="card-draw-status">
+                            <div class="draw-progress">
+                                <span id="cards-remaining">0</span> cards remaining
+                            </div>
+                            <button id="fullscreen-btn" class="btn btn-secondary">Fullscreen</button>
+                            <button id="reset-draw-btn" class="btn btn-danger">Reset Draw</button>
+                        </div>
+                    </div>
+
+                    <!-- Main card display area -->
+                    <div class="current-drawn-card-display">
+                        <div id="main-drawn-card" class="main-drawn-card">
+                            <div class="card-placeholder">
+                                <h3>Ready to start drawing cards</h3>
+                                <p>Click "Draw Card" to begin</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Large touch-friendly draw button -->
+                        <div class="draw-controls">
+                            <button id="draw-next-card-btn" class="btn btn-draw">Draw Card</button>
+                        </div>
+                    </div>
+
+                    <!-- Drawn cards history -->
+                    <div class="drawn-cards-history">
+                        <h3>Drawn Cards History</h3>
+                        <div id="drawn-cards-list" class="drawn-cards-list"></div>
+                    </div>
+                </div>
             </section>
         </main>
     </div>
