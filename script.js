@@ -2,12 +2,9 @@
 class LoteriaGame {
     constructor() {
         this.cards = this.loadCards();
-        this.drawnCards = [];
         this.currentTabla = [];
-        this.markedCells = new Set();
         this.initializeEventListeners();
         this.showSection('game-section');
-        this.updateDeckCount();
         this.generateTabla();
     }
 
@@ -41,8 +38,9 @@ class LoteriaGame {
         dropZone.addEventListener('click', () => document.getElementById('file-input').click());
 
         // Game controls
-        document.getElementById('draw-card-btn').addEventListener('click', () => this.drawCard());
+        document.getElementById('draw-card-btn')?.addEventListener('click', () => this.drawCard());
         document.getElementById('generate-tabla-btn').addEventListener('click', () => this.generateTabla());
+        document.getElementById('print-tabla-btn').addEventListener('click', () => this.printTabla());
 
         // Modal controls
         document.getElementById('save-card-btn').addEventListener('click', () => this.saveCurrentCard());
@@ -177,7 +175,7 @@ class LoteriaGame {
         setTimeout(() => msgDiv.remove(), 3000);
     }
 
-    // Generate a new tabla (4x4 game board)
+    // Generate a new tabla (4x4 board) optimized for printing
     generateTabla() {
         if (this.cards.length < 16) {
             alert('You need at least 16 cards to generate a tabla. Please upload more cards.');
@@ -187,12 +185,11 @@ class LoteriaGame {
         // Shuffle cards and select 16 for the tabla
         const shuffledCards = [...this.cards].sort(() => Math.random() - 0.5);
         this.currentTabla = shuffledCards.slice(0, 16);
-        this.markedCells.clear();
         
         this.renderTabla();
     }
 
-    // Render the tabla
+    // Render the tabla (optimized for printing, no interactivity)
     renderTabla() {
         const tablaContainer = document.getElementById('tabla');
         tablaContainer.innerHTML = '';
@@ -200,139 +197,28 @@ class LoteriaGame {
         this.currentTabla.forEach((card, index) => {
             const cellDiv = document.createElement('div');
             cellDiv.className = 'tabla-cell';
-            cellDiv.dataset.cardId = card.id;
             cellDiv.innerHTML = `
                 <img src="${card.image}" alt="${card.name}">
-                <div class="cell-name">${card.name}</div>
-                <div class="cell-number">#${card.number}</div>
+                <div class="cell-info">
+                    <div class="cell-name">${card.name}</div>
+                    <div class="cell-number">#${card.number}</div>
+                </div>
             `;
             
-            cellDiv.addEventListener('click', () => this.toggleCell(index, card.id));
+            // No click event listeners - tabla is for printing only
             tablaContainer.appendChild(cellDiv);
         });
     }
 
-    // Toggle cell marking
-    toggleCell(index, cardId) {
-        const cell = document.querySelector(`[data-card-id="${cardId}"]`);
-        
-        if (this.markedCells.has(cardId)) {
-            this.markedCells.delete(cardId);
-            cell.classList.remove('marked');
-        } else {
-            this.markedCells.add(cardId);
-            cell.classList.add('marked');
-        }
-
-        this.checkForWin();
+    // Print tabla function
+    printTabla() {
+        window.print();
     }
 
-    // Check for winning condition (simplified - any row, column, or diagonal)
-    checkForWin() {
-        if (this.markedCells.size < 4) return;
-
-        const marked = Array.from(this.markedCells);
-        const tablaIds = this.currentTabla.map(card => card.id);
-        
-        // Convert to 4x4 grid positions
-        const markedPositions = marked.map(cardId => tablaIds.indexOf(cardId));
-        
-        // Check rows
-        for (let row = 0; row < 4; row++) {
-            const rowPositions = [row * 4, row * 4 + 1, row * 4 + 2, row * 4 + 3];
-            if (rowPositions.every(pos => markedPositions.includes(pos))) {
-                this.announceWin('Row');
-                return;
-            }
-        }
-
-        // Check columns
-        for (let col = 0; col < 4; col++) {
-            const colPositions = [col, col + 4, col + 8, col + 12];
-            if (colPositions.every(pos => markedPositions.includes(pos))) {
-                this.announceWin('Column');
-                return;
-            }
-        }
-
-        // Check diagonals
-        const diagonal1 = [0, 5, 10, 15];
-        const diagonal2 = [3, 6, 9, 12];
-        
-        if (diagonal1.every(pos => markedPositions.includes(pos))) {
-            this.announceWin('Diagonal');
-        } else if (diagonal2.every(pos => markedPositions.includes(pos))) {
-            this.announceWin('Diagonal');
-        }
-    }
-
-    // Announce win
-    announceWin(type) {
-        setTimeout(() => {
-            alert(`¡LOTERÍA! You won with a ${type}! 🎉`);
-        }, 100);
-    }
-
-    // Draw a card
-    drawCard() {
-        if (this.cards.length === 0) {
-            alert('No cards available. Please upload some cards first.');
-            return;
-        }
-
-        const availableCards = this.cards.filter(card => !this.drawnCards.includes(card.id));
-        
-        if (availableCards.length === 0) {
-            alert('All cards have been drawn! Starting a new round.');
-            this.drawnCards = [];
-            return;
-        }
-
-        const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)];
-        this.drawnCards.push(randomCard.id);
-        
-        this.displayDrawnCard(randomCard);
-        this.updateDrawnCount();
-
-        // Announce the card
-        this.announceCard(randomCard);
-    }
-
-    // Display drawn card
-    displayDrawnCard(card) {
-        const drawnCardContainer = document.getElementById('drawn-card');
-        drawnCardContainer.className = 'drawn-card';
-        drawnCardContainer.innerHTML = `
-            <img src="${card.image}" alt="${card.name}">
-            <div class="card-name">${card.name}</div>
-            <div class="card-number">#${card.number}</div>
-        `;
-    }
-
-    // Announce card (could be enhanced with text-to-speech)
-    announceCard(card) {
-        console.log(`Card drawn: ${card.name} (#${card.number})`);
-        
-        // Simple visual feedback
-        const drawnCard = document.getElementById('drawn-card');
-        drawnCard.style.transform = 'scale(1.1)';
-        setTimeout(() => {
-            drawnCard.style.transform = 'scale(1)';
-        }, 300);
-    }
-
-    // Start new game
+    // Generate new tabla (simplified for printing focus)
     newGame() {
-        this.drawnCards = [];
-        this.markedCells.clear();
         this.showSection('game-section');
         this.generateTabla();
-        this.updateDrawnCount();
-        
-        // Reset drawn card display
-        const drawnCardContainer = document.getElementById('drawn-card');
-        drawnCardContainer.className = 'drawn-card-placeholder';
-        drawnCardContainer.innerHTML = '<p>Click "Draw Card" to start the game!</p>';
     }
 
     // Show deck view
@@ -367,9 +253,7 @@ class LoteriaGame {
     clearDeck() {
         if (confirm('Are you sure you want to delete all cards? This action cannot be undone.')) {
             this.cards = [];
-            this.drawnCards = [];
             this.currentTabla = [];
-            this.markedCells.clear();
             this.saveCards();
             this.renderDeckView();
             this.showSuccessMessage('All cards have been deleted.');
@@ -378,12 +262,10 @@ class LoteriaGame {
 
     // Update deck count display
     updateDeckCount() {
-        document.getElementById('deck-count').textContent = this.cards.length;
-    }
-
-    // Update drawn count display
-    updateDrawnCount() {
-        document.getElementById('drawn-count').textContent = this.drawnCards.length;
+        const deckCountElement = document.getElementById('deck-count');
+        if (deckCountElement) {
+            deckCountElement.textContent = this.cards.length;
+        }
     }
 
     // Modal functionality

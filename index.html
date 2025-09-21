@@ -12,7 +12,7 @@
             <h1>🎯 Lotería - Mexican Bingo</h1>
             <nav>
                 <button id="upload-btn" class="nav-btn">Upload Cards</button>
-                <button id="new-game-btn" class="nav-btn">New Game</button>
+                <button id="new-game-btn" class="nav-btn">Generate Tabla</button>
                 <button id="view-deck-btn" class="nav-btn">View Deck</button>
             </nav>
         </header>
@@ -33,24 +33,13 @@
 
             <!-- Game Section -->
             <section id="game-section" class="section">
-                <div class="game-info">
-                    <div id="current-card" class="current-card">
-                        <h3>Current Card</h3>
-                        <div id="drawn-card" class="drawn-card-placeholder">
-                            <p>Click "Draw Card" to start the game!</p>
-                        </div>
-                        <button id="draw-card-btn" class="btn btn-primary">Draw Card</button>
-                    </div>
-                    <div class="game-stats">
-                        <p>Cards in deck: <span id="deck-count">0</span></p>
-                        <p>Cards drawn: <span id="drawn-count">0</span></p>
-                    </div>
-                </div>
-                
                 <div class="game-board">
                     <h3>Your Tabla (4×4 Board)</h3>
                     <div id="tabla" class="tabla"></div>
-                    <button id="generate-tabla-btn" class="btn">Generate New Tabla</button>
+                    <div class="tabla-controls">
+                        <button id="generate-tabla-btn" class="btn">Generate New Tabla</button>
+                        <button id="print-tabla-btn" class="btn btn-primary print-tabla-btn">Print Tabla</button>
+                    </div>
                 </div>
             </section>
 
