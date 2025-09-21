@@ -60,7 +60,44 @@
                 <h2>Your Card Deck</h2>
                 <div id="deck-grid" class="deck-grid"></div>
                 <div class="deck-actions">
-                    <button id="clear-deck-btn" class="btn btn-danger">Clear All Cards</button>
+                    <div class="deck-primary-actions">
+                        <button id="export-deck-btn" class="btn btn-success">Export Deck</button>
+                        <button id="import-deck-btn" class="btn btn-primary">Import Deck</button>
+                    </div>
+                    <div class="deck-secondary-actions">
+                        <button id="clear-deck-btn" class="btn btn-danger">Clear All Cards</button>
+                    </div>
+                </div>
+                
+                <!-- Hidden file input for import -->
+                <input type="file" id="import-file-input" accept=".json" hidden>
+                
+                <!-- Import options modal -->
+                <div id="import-options-modal" class="modal hidden">
+                    <div class="modal-content">
+                        <h3>Import Options</h3>
+                        <div class="import-preview">
+                            <div id="import-deck-info"></div>
+                        </div>
+                        <div class="import-options">
+                            <label class="import-option">
+                                <input type="radio" name="import-mode" value="replace" checked>
+                                <span>Replace existing deck entirely</span>
+                            </label>
+                            <label class="import-option">
+                                <input type="radio" name="import-mode" value="merge">
+                                <span>Merge with existing cards (skip duplicates by name)</span>
+                            </label>
+                            <label class="import-option">
+                                <input type="radio" name="import-mode" value="append">
+                                <span>Add as new cards (append to existing deck)</span>
+                            </label>
+                        </div>
+                        <div class="modal-actions">
+                            <button id="confirm-import-btn" class="btn btn-primary">Import Deck</button>
+                            <button id="cancel-import-btn" class="btn">Cancel</button>
+                        </div>
+                    </div>
                 </div>
             </section>
 
