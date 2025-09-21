@@ -14,10 +14,28 @@ class LoteriaGame {
         return savedCards ? JSON.parse(savedCards) : [];
     }
 
-    // Save cards to localStorage
+    // Save cards to localStorage with error handling
     saveCards() {
-        localStorage.setItem('loteria-cards', JSON.stringify(this.cards));
-        this.updateDeckCount();
+        try {
+            localStorage.setItem('loteria-cards', JSON.stringify(this.cards));
+            this.updateDeckCount();
+        } catch (error) {
+            if (error.name === 'QuotaExceededError') {
+                this.handleStorageQuotaExceeded();
+            } else {
+                console.error('Error saving cards:', error);
+                alert('Error saving cards. Please try again.');
+            }
+        }
+    }
+
+    // Handle storage quota exceeded error
+    handleStorageQuotaExceeded() {
+        alert('Storage limit exceeded! Your images are too large. Please try uploading smaller images or use fewer cards.');
+        console.warn('localStorage quota exceeded. Consider compressing images or reducing the number of cards.');
+        
+        // Optionally, we could try to compress existing images or remove some cards
+        // For now, just inform the user
     }
 
     // Initialize all event listeners
@@ -89,19 +107,56 @@ class LoteriaGame {
         this.processFiles(files);
     }
 
-    // Process uploaded files
-    processFiles(files) {
+    // Compress image to reduce storage size
+    compressImage(file, maxWidth = 400, maxHeight = 533, quality = 0.8) {
+        return new Promise((resolve) => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            img.onload = () => {
+                // Calculate new dimensions maintaining 3:4 aspect ratio
+                let { width, height } = img;
+                
+                // Scale down if image is too large
+                if (width > maxWidth || height > maxHeight) {
+                    const widthRatio = maxWidth / width;
+                    const heightRatio = maxHeight / height;
+                    const ratio = Math.min(widthRatio, heightRatio);
+                    
+                    width = Math.round(width * ratio);
+                    height = Math.round(height * ratio);
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Draw and compress
+                ctx.drawImage(img, 0, 0, width, height);
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                resolve(compressedDataUrl);
+            };
+            
+            img.src = URL.createObjectURL(file);
+        });
+    }
+
+    // Process uploaded files with compression
+    async processFiles(files) {
         const previewContainer = document.getElementById('upload-previews');
         
-        files.forEach(file => {
+        for (const file of files) {
             if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.createPreviewCard(e.target.result, file.name);
-                };
-                reader.readAsDataURL(file);
+                try {
+                    // Compress the image before processing
+                    const compressedImageSrc = await this.compressImage(file);
+                    this.createPreviewCard(compressedImageSrc, file.name);
+                } catch (error) {
+                    console.error('Error processing image:', error);
+                    alert(`Error processing image ${file.name}. Please try a different image.`);
+                }
             }
-        });
+        }
     }
 
     // Create preview card for uploaded image
@@ -123,7 +178,7 @@ class LoteriaGame {
         previewContainer.appendChild(cardDiv);
     }
 
-    // Add card from preview
+    // Add card from preview with better error handling
     addCardFromPreview(button, imageSrc) {
         const previewCard = button.parentElement;
         const nameInput = previewCard.querySelector('input');
@@ -147,12 +202,19 @@ class LoteriaGame {
             number: this.cards.length + 1
         };
 
+        // Add to cards array
         this.cards.push(newCard);
-        this.saveCards();
-        previewCard.remove();
         
-        // Show success message
-        this.showSuccessMessage(`Card "${cardName}" added successfully!`);
+        // Try to save - if it fails, remove the card from the array
+        try {
+            this.saveCards();
+            previewCard.remove();
+            this.showSuccessMessage(`Card "${cardName}" added successfully!`);
+        } catch (error) {
+            // Remove the card we just added since saving failed
+            this.cards.pop();
+            console.error('Failed to save card:', error);
+        }
     }
 
     // Show success message
@@ -260,11 +322,36 @@ class LoteriaGame {
         }
     }
 
-    // Update deck count display
+    // Update deck count display and storage info
     updateDeckCount() {
         const deckCountElement = document.getElementById('deck-count');
         if (deckCountElement) {
             deckCountElement.textContent = this.cards.length;
+        }
+        
+        // Update storage usage info
+        this.updateStorageInfo();
+    }
+
+    // Update storage usage information
+    updateStorageInfo() {
+        try {
+            const cardsData = JSON.stringify(this.cards);
+            const currentSize = new Blob([cardsData]).size;
+            const currentSizeMB = (currentSize / (1024 * 1024)).toFixed(2);
+            
+            // Estimate localStorage limit (usually 5-10MB, we'll use 5MB as conservative estimate)
+            const estimatedLimit = 5 * 1024 * 1024; // 5MB in bytes
+            const usagePercent = Math.round((currentSize / estimatedLimit) * 100);
+            
+            console.log(`Storage usage: ${currentSizeMB}MB (${usagePercent}% of estimated 5MB limit)`);
+            
+            // Show warning if approaching limit
+            if (usagePercent > 80) {
+                console.warn('Storage usage is high. Consider using smaller images or fewer cards.');
+            }
+        } catch (error) {
+            console.log('Could not calculate storage usage:', error);
         }
     }
 
