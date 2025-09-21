@@ -4,7 +4,7 @@ console.log('=============================');
 
 // Test 1: Check if core functions exist
 const fs = require('fs');
-const scriptContent = fs.readFileSync('script.js', 'utf8');
+const scriptContent = fs.readFileSync('public/script.js', 'utf8');
 
 const features = [
     'class LoteriaGame',
@@ -14,9 +14,9 @@ const features = [
     'drawCard()',
     'handleFileSelect',
     'addCardFromPreview',
-    'checkForWin()',
-    'announceWin(',
-    'localStorage'
+    'exportDeck()',
+    'importDeck(',
+    'IndexedDB'
 ];
 
 console.log('\n✅ Core Features Check:');
@@ -26,13 +26,16 @@ features.forEach(feature => {
 });
 
 // Test 2: Check HTML structure
-const htmlContent = fs.readFileSync('index.html', 'utf8');
+const htmlContent = fs.readFileSync('public/index.html', 'utf8');
 const htmlElements = [
     'upload-section',
     'game-section', 
     'deck-section',
+    'card-draw-section',
     'tabla',
-    'draw-card-btn',
+    'card-draw-btn',
+    'export-deck-btn',
+    'import-deck-btn',
     'file-input',
     'drop-zone'
 ];
@@ -44,7 +47,7 @@ htmlElements.forEach(element => {
 });
 
 // Test 3: Check CSS styles
-const cssContent = fs.readFileSync('style.css', 'utf8');
+const cssContent = fs.readFileSync('public/style.css', 'utf8');
 const cssClasses = [
     '.container',
     '.tabla',
@@ -63,8 +66,9 @@ cssClasses.forEach(cssClass => {
 
 console.log('\n🎉 Validation Complete!');
 console.log('\nTo test the webapp:');
-console.log('1. Open index.html in a web browser');
-console.log('2. Upload some images (minimum 16 for full game)');
-console.log('3. Click "New Game" to generate a tabla');
-console.log('4. Click "Draw Card" to start playing');
-console.log('5. Mark cards on your tabla to win!');
+console.log('1. Serve from public/ directory (e.g., python3 -m http.server 8000)');
+console.log('2. Open http://localhost:8000 in a web browser');
+console.log('3. Upload images to create custom cards');
+console.log('4. Generate tablas for printing');
+console.log('5. Use Card Draw mode for presentations');
+console.log('6. Test import/export and offline functionality');

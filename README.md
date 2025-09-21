@@ -1,6 +1,15 @@
 # 🎯 Lotería - Mexican Bingo Webapp
 
-A comprehensive web application for creating custom Lotería (Mexican Bingo) cards with photo upload, printable tabla generation, iPad-optimized Card Draw presentation, cross-device synchronization, and full offline PWA functionality.
+A comprehensive Progressive Web App for creating custom Lotería (Mexican Bingo) cards with photo upload, printable tabla generation, iPad-optimized Card Draw presentation, cross-device synchronization, and full offline functionality.
+
+## 📋 Table of Contents
+- [Features](#-features)
+- [Getting Started](#-getting-started)
+- [How to Use](#-how-to-use)
+- [Features Overview](#-features-overview)
+- [Technical Details](#%EF%B8%8F-technical-details)
+- [Contributing](#-contributing)
+- [License](#-license)
 
 ## 🎮 Features
 
@@ -23,9 +32,19 @@ A comprehensive web application for creating custom Lotería (Mexican Bingo) car
 
 ### GitHub Pages (Recommended)
 The webapp is hosted on GitHub Pages and ready to use:
-- Visit the live webapp (GitHub Pages URL will be available after deployment)
-- No installation required - works directly in your browser
-- Can be installed as PWA for offline use
+- **Live URL**: `https://frizzle-chan.github.io/lotteria/` (available after enabling GitHub Pages)
+- **No installation required** - works directly in your browser
+- **Install as PWA** for offline use on desktop and mobile
+- **Cross-device sync** - create on desktop, present on iPad
+
+#### Enabling GitHub Pages Deployment:
+1. Go to repository **Settings** → **Pages**
+2. Under **Source**, select **Deploy from a branch**
+3. Choose **main** branch and **/public** folder (or configure custom build)
+4. Click **Save** - GitHub will deploy automatically
+5. Access your live webapp at the GitHub Pages URL
+
+**Note**: This project is structured with web assets in `/public` directory for clean separation of development and production files.
 
 ### Local Development
 1. Clone this repository
