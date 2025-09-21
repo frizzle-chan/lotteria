@@ -4,6 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lotería - Mexican Bingo</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Create custom Lotería (Mexican Bingo) cards with your photos. Print tablas and use Card Draw for iPad presentation.">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Lotería">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Lotería">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Favicon and App Icons -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iOCIgZmlsbD0iIzY2N2VlYSIvPgo8dGV4dCB4PSIyNCIgeT0iMzAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIj7wn46vPC90ZXh0Pgo8L3N2Zz4=">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiByeD0iMzIiIGZpbGw9IiM2NjdlZWEiLz4KPHR9eHQgeD0iOTYiIHk9IjEyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI5NiIgZm9udC13ZWlnaHQ9ImJvbGQiPvCfj688L3RleHQ+Cjwvc3ZnPg==">
+    
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileColor" content="#667eea">
+    <meta name="msapplication-TileImage" content="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQ0IiBoZWlnaHQ9IjE0NCIgdmlld0JveD0iMCAwIDE0NCAxNDQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxNDQiIGhlaWdodD0iMTQ0IiByeD0iMjQiIGZpbGw9IiM2NjdlZWEiLz4KPHR9eHQgeD0iNzIiIHk9IjkwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjcyIiBmb250LXdlaWdodD0iYm9sZCI+8J+OrzwvdGV4dD4KPC9zdmc+">
+    
+    <!-- Stylesheets -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -172,6 +194,134 @@
         </div>
     </div>
 
+    <!-- Offline Indicator -->
+    <div id="offline-indicator" class="offline-indicator hidden">
+        <span class="offline-icon">📶</span>
+        <span class="offline-text">Offline Mode</span>
+    </div>
+
+    <!-- PWA Install Banner -->
+    <div id="install-banner" class="install-banner hidden">
+        <div class="install-content">
+            <span class="install-icon">📱</span>
+            <div class="install-text">
+                <strong>Install Lotería</strong>
+                <small>Add to home screen for offline access</small>
+            </div>
+            <div class="install-actions">
+                <button id="install-btn" class="btn btn-primary">Install</button>
+                <button id="install-dismiss" class="btn">Later</button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
+    <script>
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const registration = await navigator.serviceWorker.register('./sw.js');
+                    console.log('SW registered successfully:', registration.scope);
+                    
+                    // Handle service worker updates
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        if (newWorker) {
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New content available, show update notification
+                                    showUpdateNotification();
+                                }
+                            });
+                        }
+                    });
+                } catch (error) {
+                    console.error('SW registration failed:', error);
+                }
+            });
+        }
+
+        // PWA Install Prompt
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent Chrome 67 and earlier from automatically showing the prompt
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show custom install banner
+            showInstallBanner();
+        });
+
+        function showInstallBanner() {
+            const banner = document.getElementById('install-banner');
+            const installBtn = document.getElementById('install-btn');
+            const dismissBtn = document.getElementById('install-dismiss');
+            
+            banner.classList.remove('hidden');
+            
+            installBtn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log('PWA install outcome:', outcome);
+                    deferredPrompt = null;
+                    banner.classList.add('hidden');
+                }
+            });
+            
+            dismissBtn.addEventListener('click', () => {
+                banner.classList.add('hidden');
+                // Remember dismissal for 7 days
+                localStorage.setItem('pwa-install-dismissed', Date.now() + (7 * 24 * 60 * 60 * 1000));
+            });
+            
+            // Auto-hide if dismissed recently
+            const dismissed = localStorage.getItem('pwa-install-dismissed');
+            if (dismissed && Date.now() < parseInt(dismissed)) {
+                banner.classList.add('hidden');
+            }
+        }
+
+        function showUpdateNotification() {
+            if (confirm('A new version is available. Reload to update?')) {
+                window.location.reload();
+            }
+        }
+
+        // Network status monitoring
+        function updateNetworkStatus() {
+            const indicator = document.getElementById('offline-indicator');
+            const isOnline = navigator.onLine;
+            
+            if (isOnline) {
+                indicator.classList.add('hidden');
+                document.body.classList.remove('offline-mode');
+            } else {
+                indicator.classList.remove('hidden');
+                document.body.classList.add('offline-mode');
+            }
+        }
+
+        // Monitor network status
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+        
+        // Initial status check
+        updateNetworkStatus();
+
+        // Handle URL parameters for shortcuts
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const section = urlParams.get('section');
+            
+            if (section === 'upload') {
+                document.getElementById('upload-btn')?.click();
+            } else if (section === 'card-draw') {
+                document.getElementById('card-draw-btn')?.click();
+            }
+        });
+    </script>
 </body>
 </html>
