@@ -1,41 +1,147 @@
-// Lotería Game Logic
+// Lotería Game Logic with IndexedDB storage
 class LoteriaGame {
     constructor() {
-        this.cards = this.loadCards();
+        this.cards = [];
         this.currentTabla = [];
-        this.initializeEventListeners();
-        this.showSection('game-section');
-        this.generateTabla();
+        this.dbName = 'LoteriaDB';
+        this.dbVersion = 1;
+        this.db = null;
+        this.initializeDatabase().then(() => {
+            this.loadCards().then(() => {
+                this.initializeEventListeners();
+                this.showSection('game-section');
+                this.generateTabla();
+            });
+        });
     }
 
-    // Load cards from localStorage
-    loadCards() {
-        const savedCards = localStorage.getItem('loteria-cards');
-        return savedCards ? JSON.parse(savedCards) : [];
+    // Initialize IndexedDB
+    async initializeDatabase() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.dbName, this.dbVersion);
+            
+            request.onerror = () => {
+                console.error('Failed to open IndexedDB:', request.error);
+                reject(request.error);
+            };
+            
+            request.onsuccess = () => {
+                this.db = request.result;
+                console.log('IndexedDB initialized successfully');
+                resolve(this.db);
+            };
+            
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                
+                // Create object store for cards
+                if (!db.objectStoreNames.contains('cards')) {
+                    const cardStore = db.createObjectStore('cards', { keyPath: 'id' });
+                    cardStore.createIndex('name', 'name', { unique: true });
+                    cardStore.createIndex('number', 'number', { unique: false });
+                }
+            };
+        });
     }
 
-    // Save cards to localStorage with error handling
-    saveCards() {
-        try {
-            localStorage.setItem('loteria-cards', JSON.stringify(this.cards));
-            this.updateDeckCount();
-        } catch (error) {
-            if (error.name === 'QuotaExceededError') {
-                this.handleStorageQuotaExceeded();
-            } else {
-                console.error('Error saving cards:', error);
-                alert('Error saving cards. Please try again.');
+    // Load cards from IndexedDB
+    async loadCards() {
+        return new Promise((resolve, reject) => {
+            if (!this.db) {
+                reject(new Error('Database not initialized'));
+                return;
             }
-        }
+            
+            const transaction = this.db.transaction(['cards'], 'readonly');
+            const store = transaction.objectStore('cards');
+            const request = store.getAll();
+            
+            request.onsuccess = () => {
+                this.cards = request.result || [];
+                console.log(`Loaded ${this.cards.length} cards from IndexedDB`);
+                resolve(this.cards);
+            };
+            
+            request.onerror = () => {
+                console.error('Failed to load cards:', request.error);
+                reject(request.error);
+            };
+        });
     }
 
-    // Handle storage quota exceeded error
-    handleStorageQuotaExceeded() {
-        alert('Storage limit exceeded! Your images are too large. Please try uploading smaller images or use fewer cards.');
-        console.warn('localStorage quota exceeded. Consider compressing images or reducing the number of cards.');
-        
-        // Optionally, we could try to compress existing images or remove some cards
-        // For now, just inform the user
+    // Save all cards to IndexedDB
+    async saveCards() {
+        return new Promise((resolve, reject) => {
+            if (!this.db) {
+                reject(new Error('Database not initialized'));
+                return;
+            }
+            
+            const transaction = this.db.transaction(['cards'], 'readwrite');
+            const store = transaction.objectStore('cards');
+            
+            // Clear existing cards and add all current cards
+            const clearRequest = store.clear();
+            
+            clearRequest.onsuccess = () => {
+                // Add all cards
+                let addedCount = 0;
+                const totalCards = this.cards.length;
+                
+                if (totalCards === 0) {
+                    this.updateDeckCount();
+                    resolve();
+                    return;
+                }
+                
+                this.cards.forEach(card => {
+                    const addRequest = store.add(card);
+                    
+                    addRequest.onsuccess = () => {
+                        addedCount++;
+                        if (addedCount === totalCards) {
+                            console.log(`Saved ${addedCount} cards to IndexedDB`);
+                            this.updateDeckCount();
+                            resolve();
+                        }
+                    };
+                    
+                    addRequest.onerror = () => {
+                        console.error('Failed to save card:', card.name, addRequest.error);
+                        reject(addRequest.error);
+                    };
+                });
+            };
+            
+            clearRequest.onerror = () => {
+                console.error('Failed to clear cards store:', clearRequest.error);
+                reject(clearRequest.error);
+            };
+        });
+    }
+
+    // Add a single card to IndexedDB
+    async addCard(card) {
+        return new Promise((resolve, reject) => {
+            if (!this.db) {
+                reject(new Error('Database not initialized'));
+                return;
+            }
+            
+            const transaction = this.db.transaction(['cards'], 'readwrite');
+            const store = transaction.objectStore('cards');
+            const request = store.add(card);
+            
+            request.onsuccess = () => {
+                console.log('Card added to IndexedDB:', card.name);
+                resolve(card);
+            };
+            
+            request.onerror = () => {
+                console.error('Failed to add card:', request.error);
+                reject(request.error);
+            };
+        });
     }
 
     // Initialize all event listeners
@@ -107,56 +213,19 @@ class LoteriaGame {
         this.processFiles(files);
     }
 
-    // Compress image to reduce storage size
-    compressImage(file, maxWidth = 400, maxHeight = 533, quality = 0.8) {
-        return new Promise((resolve) => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const img = new Image();
-            
-            img.onload = () => {
-                // Calculate new dimensions maintaining 3:4 aspect ratio
-                let { width, height } = img;
-                
-                // Scale down if image is too large
-                if (width > maxWidth || height > maxHeight) {
-                    const widthRatio = maxWidth / width;
-                    const heightRatio = maxHeight / height;
-                    const ratio = Math.min(widthRatio, heightRatio);
-                    
-                    width = Math.round(width * ratio);
-                    height = Math.round(height * ratio);
-                }
-                
-                canvas.width = width;
-                canvas.height = height;
-                
-                // Draw and compress
-                ctx.drawImage(img, 0, 0, width, height);
-                const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-                resolve(compressedDataUrl);
-            };
-            
-            img.src = URL.createObjectURL(file);
-        });
-    }
-
-    // Process uploaded files with compression
-    async processFiles(files) {
+    // Process uploaded files without compression
+    processFiles(files) {
         const previewContainer = document.getElementById('upload-previews');
         
-        for (const file of files) {
+        files.forEach(file => {
             if (file.type.startsWith('image/')) {
-                try {
-                    // Compress the image before processing
-                    const compressedImageSrc = await this.compressImage(file);
-                    this.createPreviewCard(compressedImageSrc, file.name);
-                } catch (error) {
-                    console.error('Error processing image:', error);
-                    alert(`Error processing image ${file.name}. Please try a different image.`);
-                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.createPreviewCard(e.target.result, file.name);
+                };
+                reader.readAsDataURL(file);
             }
-        }
+        });
     }
 
     // Create preview card for uploaded image
@@ -178,8 +247,8 @@ class LoteriaGame {
         previewContainer.appendChild(cardDiv);
     }
 
-    // Add card from preview with better error handling
-    addCardFromPreview(button, imageSrc) {
+    // Add card from preview with IndexedDB storage
+    async addCardFromPreview(button, imageSrc) {
         const previewCard = button.parentElement;
         const nameInput = previewCard.querySelector('input');
         const cardName = nameInput.value.trim();
@@ -202,18 +271,21 @@ class LoteriaGame {
             number: this.cards.length + 1
         };
 
-        // Add to cards array
-        this.cards.push(newCard);
-        
-        // Try to save - if it fails, remove the card from the array
         try {
-            this.saveCards();
+            // Add to local array first
+            this.cards.push(newCard);
+            
+            // Add to IndexedDB
+            await this.addCard(newCard);
+            
             previewCard.remove();
             this.showSuccessMessage(`Card "${cardName}" added successfully!`);
+            this.updateDeckCount();
         } catch (error) {
-            // Remove the card we just added since saving failed
+            // Remove from local array if IndexedDB save failed
             this.cards.pop();
             console.error('Failed to save card:', error);
+            alert(`Failed to save card "${cardName}". Please try again.`);
         }
     }
 
@@ -311,48 +383,31 @@ class LoteriaGame {
         });
     }
 
-    // Clear all cards
-    clearDeck() {
+    // Clear all cards from IndexedDB
+    async clearDeck() {
         if (confirm('Are you sure you want to delete all cards? This action cannot be undone.')) {
-            this.cards = [];
-            this.currentTabla = [];
-            this.saveCards();
-            this.renderDeckView();
-            this.showSuccessMessage('All cards have been deleted.');
+            try {
+                this.cards = [];
+                this.currentTabla = [];
+                await this.saveCards();
+                this.renderDeckView();
+                this.showSuccessMessage('All cards have been deleted.');
+            } catch (error) {
+                console.error('Failed to clear deck:', error);
+                alert('Failed to clear deck. Please try again.');
+            }
         }
     }
 
-    // Update deck count display and storage info
+    // Update deck count display
     updateDeckCount() {
         const deckCountElement = document.getElementById('deck-count');
         if (deckCountElement) {
             deckCountElement.textContent = this.cards.length;
         }
         
-        // Update storage usage info
-        this.updateStorageInfo();
-    }
-
-    // Update storage usage information
-    updateStorageInfo() {
-        try {
-            const cardsData = JSON.stringify(this.cards);
-            const currentSize = new Blob([cardsData]).size;
-            const currentSizeMB = (currentSize / (1024 * 1024)).toFixed(2);
-            
-            // Estimate localStorage limit (usually 5-10MB, we'll use 5MB as conservative estimate)
-            const estimatedLimit = 5 * 1024 * 1024; // 5MB in bytes
-            const usagePercent = Math.round((currentSize / estimatedLimit) * 100);
-            
-            console.log(`Storage usage: ${currentSizeMB}MB (${usagePercent}% of estimated 5MB limit)`);
-            
-            // Show warning if approaching limit
-            if (usagePercent > 80) {
-                console.warn('Storage usage is high. Consider using smaller images or fewer cards.');
-            }
-        } catch (error) {
-            console.log('Could not calculate storage usage:', error);
-        }
+        // Log current storage info for IndexedDB
+        console.log(`Cards in IndexedDB: ${this.cards.length}`);
     }
 
     // Modal functionality
