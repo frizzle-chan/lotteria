@@ -137,7 +137,7 @@ console.log(`🏆 Win result: ${winResult || 'No win yet'}`);
 
 console.log('\n✅ All core features working correctly!');
 console.log('\n📱 Ready for full webapp testing:');
-console.log('   - Serve from public/ directory with a local server');  
+console.log('   - Serve from docs/ directory with a local server');  
 console.log('   - Upload photos and create custom cards');
 console.log('   - Generate and print tablas for players');
 console.log('   - Use Card Draw mode for iPad presentations');
