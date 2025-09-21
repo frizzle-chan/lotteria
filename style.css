@@ -701,6 +701,173 @@ nav {
 
 .deck-actions {
     text-align: center;
+    margin-top: 20px;
+}
+
+.deck-primary-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.deck-secondary-actions {
+    display: flex;
+    justify-content: center;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(56, 161, 105, 0.3);
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(56, 161, 105, 0.4);
+}
+
+/* Import Options Modal */
+.import-preview {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.import-deck-info {
+    font-size: 14px;
+    color: #495057;
+}
+
+.import-deck-info h4 {
+    margin: 0 0 10px 0;
+    color: #343a40;
+}
+
+.import-options {
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+.import-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.import-option:hover {
+    background: #f8f9fa;
+}
+
+.import-option input[type="radio"] {
+    margin: 0;
+    width: 16px;
+    height: 16px;
+}
+
+.import-option span {
+    font-size: 14px;
+    color: #495057;
+}
+
+/* Import Progress */
+.import-progress {
+    margin: 15px 0;
+    padding: 10px;
+    background: #e3f2fd;
+    border: 1px solid #bbdefb;
+    border-radius: 6px;
+    display: none;
+}
+
+.import-progress-bar {
+    width: 100%;
+    height: 20px;
+    background: #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.import-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2196f3 0%, #1976d2 100%);
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+.import-progress-text {
+    font-size: 14px;
+    color: #1565c0;
+    text-align: center;
+}
+
+/* Export feedback */
+.export-success {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #4caf50;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    z-index: 1500;
+    animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Drag and drop import styling */
+.drag-over-import {
+    border: 3px dashed #667eea !important;
+    background: rgba(102, 126, 234, 0.1) !important;
+    border-radius: 15px;
+}
+
+.drag-over-import::after {
+    content: "Drop JSON file here to import deck";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(102, 126, 234, 0.9);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 16px;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+#deck-section {
+    position: relative;
+    min-height: 200px;
 }
 
 /* Modal */
@@ -848,6 +1015,35 @@ nav {
     .draw-progress {
         font-size: 18px;
         padding: 12px 25px;
+    }
+    
+    /* Import/Export iPad optimizations */
+    .deck-primary-actions {
+        flex-direction: column;
+        gap: 20px;
+        align-items: center;
+    }
+    
+    .btn-success, .deck-primary-actions .btn {
+        min-height: 60px;
+        padding: 15px 30px;
+        font-size: 18px;
+        min-width: 200px;
+    }
+    
+    .import-option {
+        padding: 15px;
+        font-size: 16px;
+    }
+    
+    .import-option input[type="radio"] {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .modal-content {
+        max-width: 500px;
+        padding: 40px;
     }
 }
 

@@ -6,12 +6,14 @@ class LoteriaGame {
         this.drawnCards = [];
         this.drawnCardsHistory = [];
         this.isFullscreen = false;
+        this.pendingImportData = null;
         this.dbName = 'LoteriaDB';
         this.dbVersion = 1;
         this.db = null;
         this.initializeDatabase().then(() => {
             this.loadCards().then(() => {
                 this.initializeEventListeners();
+                this.initializeDragAndDrop();
                 this.showSection('game-section');
                 this.generateTabla();
             });
@@ -185,6 +187,13 @@ class LoteriaGame {
 
         // Deck management
         document.getElementById('clear-deck-btn').addEventListener('click', () => this.clearDeck());
+
+        // Import/Export functionality  
+        document.getElementById('export-deck-btn').addEventListener('click', () => this.exportDeck());
+        document.getElementById('import-deck-btn').addEventListener('click', () => this.importDeck());
+        document.getElementById('import-file-input').addEventListener('change', (e) => this.handleImportFile(e));
+        document.getElementById('confirm-import-btn').addEventListener('click', () => this.confirmImport());
+        document.getElementById('cancel-import-btn').addEventListener('click', () => this.cancelImport());
 
         // Keyboard shortcuts for card draw
         document.addEventListener('keydown', (e) => {
@@ -613,6 +622,283 @@ class LoteriaGame {
             // Show other UI elements
             document.querySelector('header').style.display = 'block';
         }
+    }
+
+    // Export deck to JSON file
+    exportDeck() {
+        if (this.cards.length === 0) {
+            alert('No cards available to export. Please upload some cards first.');
+            return;
+        }
+
+        // Create export data structure
+        const exportData = {
+            version: "1.0",
+            deckName: `Custom Lotería Deck`,
+            exportDate: new Date().toISOString(),
+            cardCount: this.cards.length,
+            cards: this.cards.map(card => ({
+                id: card.id,
+                name: card.name,
+                image: card.image,
+                number: card.number
+            }))
+        };
+
+        // Create and download file
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        // Generate filename with timestamp
+        const timestamp = new Date().toISOString().split('T')[0];
+        const filename = `loteria-deck-${timestamp}.json`;
+        
+        // Create download link
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(dataBlob);
+        downloadLink.download = filename;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        // Show success feedback
+        this.showExportSuccess(filename);
+    }
+
+    // Show export success message
+    showExportSuccess(filename) {
+        const successDiv = document.createElement('div');
+        successDiv.className = 'export-success';
+        successDiv.textContent = `Deck exported as ${filename}`;
+        document.body.appendChild(successDiv);
+        
+        setTimeout(() => {
+            if (successDiv.parentNode) {
+                successDiv.parentNode.removeChild(successDiv);
+            }
+        }, 3000);
+    }
+
+    // Import deck from JSON file
+    importDeck() {
+        document.getElementById('import-file-input').click();
+    }
+
+    // Handle import file selection
+    handleImportFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (!file.name.toLowerCase().endsWith('.json')) {
+            alert('Please select a valid JSON file.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const importData = JSON.parse(e.target.result);
+                this.validateAndPreviewImport(importData);
+            } catch (error) {
+                console.error('Import error:', error);
+                alert('Invalid JSON file. Please check the file format and try again.');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // Validate and preview import data
+    validateAndPreviewImport(importData) {
+        // Validate required fields
+        if (!importData.version || !importData.cards || !Array.isArray(importData.cards)) {
+            alert('Invalid deck file format. Missing required fields.');
+            return;
+        }
+
+        // Validate cards structure
+        const validCards = importData.cards.filter(card => 
+            card.id && card.name && card.image && card.number !== undefined
+        );
+
+        if (validCards.length === 0) {
+            alert('No valid cards found in the import file.');
+            return;
+        }
+
+        if (validCards.length !== importData.cards.length) {
+            const skipped = importData.cards.length - validCards.length;
+            console.warn(`Skipped ${skipped} invalid cards during import validation.`);
+        }
+
+        // Store import data and show preview
+        this.pendingImportData = {
+            ...importData,
+            cards: validCards
+        };
+
+        this.showImportPreview();
+    }
+
+    // Show import preview modal
+    showImportPreview() {
+        const modal = document.getElementById('import-options-modal');
+        const infoDiv = document.getElementById('import-deck-info');
+        
+        const data = this.pendingImportData;
+        const exportDate = new Date(data.exportDate).toLocaleDateString();
+        
+        infoDiv.innerHTML = `
+            <h4>${data.deckName || 'Imported Deck'}</h4>
+            <p><strong>Cards:</strong> ${data.cardCount} cards</p>
+            <p><strong>Export Date:</strong> ${exportDate}</p>
+            <p><strong>Valid Cards:</strong> ${data.cards.length}</p>
+            <p><strong>Current Deck:</strong> ${this.cards.length} cards</p>
+        `;
+        
+        modal.classList.remove('hidden');
+    }
+
+    // Confirm import with selected options
+    async confirmImport() {
+        const modal = document.getElementById('import-options-modal');
+        const importMode = document.querySelector('input[name="import-mode"]:checked').value;
+        
+        if (!this.pendingImportData) {
+            alert('No import data available.');
+            return;
+        }
+
+        // Show progress
+        this.showImportProgress();
+
+        try {
+            let finalCards = [];
+            
+            switch (importMode) {
+                case 'replace':
+                    finalCards = [...this.pendingImportData.cards];
+                    break;
+                    
+                case 'merge':
+                    finalCards = [...this.cards];
+                    this.pendingImportData.cards.forEach(newCard => {
+                        const exists = finalCards.some(card => 
+                            card.name.toLowerCase() === newCard.name.toLowerCase()
+                        );
+                        if (!exists) {
+                            finalCards.push(newCard);
+                        }
+                    });
+                    break;
+                    
+                case 'append':
+                    finalCards = [...this.cards, ...this.pendingImportData.cards];
+                    break;
+            }
+
+            // Update cards and save to IndexedDB
+            this.cards = finalCards;
+            await this.saveCards();
+            
+            // Update UI
+            this.renderDeckView();
+            this.updateDeckCount();
+            
+            // Hide modal and show success
+            modal.classList.add('hidden');
+            this.hideImportProgress();
+            
+            const importedCount = this.pendingImportData.cards.length;
+            alert(`Successfully imported ${importedCount} cards!`);
+            
+        } catch (error) {
+            console.error('Import failed:', error);
+            alert('Import failed. Please try again.');
+            this.hideImportProgress();
+        }
+        
+        // Clean up
+        this.pendingImportData = null;
+        document.getElementById('import-file-input').value = '';
+    }
+
+    // Cancel import
+    cancelImport() {
+        const modal = document.getElementById('import-options-modal');
+        modal.classList.add('hidden');
+        this.pendingImportData = null;
+        document.getElementById('import-file-input').value = '';
+    }
+
+    // Show import progress
+    showImportProgress() {
+        // Could be enhanced with actual progress bar
+        console.log('Import in progress...');
+    }
+
+    // Hide import progress
+    hideImportProgress() {
+        console.log('Import completed.');
+    }
+
+    // Initialize drag and drop for import
+    initializeDragAndDrop() {
+        const dropZones = [
+            document.getElementById('deck-section'),
+            document.body
+        ];
+
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+                
+                // Only show drop effect for JSON files
+                if (this.isDeckSection(e.target)) {
+                    zone.classList.add('drag-over-import');
+                }
+            });
+
+            zone.addEventListener('dragleave', (e) => {
+                // Only remove class if leaving the zone entirely
+                if (!zone.contains(e.relatedTarget)) {
+                    zone.classList.remove('drag-over-import');
+                }
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over-import');
+                
+                const files = Array.from(e.dataTransfer.files);
+                const jsonFile = files.find(file => file.name.toLowerCase().endsWith('.json'));
+                
+                if (jsonFile && this.isDeckSection(e.target)) {
+                    this.handleImportFileDirectly(jsonFile);
+                }
+            });
+        });
+    }
+
+    // Check if target is within deck section
+    isDeckSection(target) {
+        const deckSection = document.getElementById('deck-section');
+        return deckSection && (deckSection.contains(target) || !deckSection.classList.contains('hidden'));
+    }
+
+    // Handle import file directly (for drag and drop)
+    handleImportFileDirectly(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const importData = JSON.parse(e.target.result);
+                this.validateAndPreviewImport(importData);
+            } catch (error) {
+                console.error('Import error:', error);
+                alert('Invalid JSON file. Please check the file format and try again.');
+            }
+        };
+        reader.readAsText(file);
     }
 
     // Render deck view
