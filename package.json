@@ -2,10 +2,10 @@
   "name": "lotteria",
   "version": "1.0.0",
   "description": "Comprehensive Lotería (Mexican Bingo) PWA with photo upload, printable tabla generation, iPad-optimized Card Draw, cross-device sync, and offline functionality",
-  "main": "public/index.html",
+  "main": "docs/index.html",
   "scripts": {
-    "start": "cd public && python3 -m http.server 8000",
-    "dev": "cd public && python3 -m http.server 8000",
+    "start": "cd docs && python3 -m http.server 8000",
+    "dev": "cd docs && python3 -m http.server 8000",
     "validate": "node validate.js",
     "test-features": "node test-features.js"
   },

@@ -4,7 +4,7 @@ console.log('=============================');
 
 // Test 1: Check if core functions exist
 const fs = require('fs');
-const scriptContent = fs.readFileSync('public/script.js', 'utf8');
+const scriptContent = fs.readFileSync('docs/script.js', 'utf8');
 
 const features = [
     'class LoteriaGame',
@@ -26,7 +26,7 @@ features.forEach(feature => {
 });
 
 // Test 2: Check HTML structure
-const htmlContent = fs.readFileSync('public/index.html', 'utf8');
+const htmlContent = fs.readFileSync('docs/index.html', 'utf8');
 const htmlElements = [
     'upload-section',
     'game-section', 
@@ -47,7 +47,7 @@ htmlElements.forEach(element => {
 });
 
 // Test 3: Check CSS styles
-const cssContent = fs.readFileSync('public/style.css', 'utf8');
+const cssContent = fs.readFileSync('docs/style.css', 'utf8');
 const cssClasses = [
     '.container',
     '.tabla',
@@ -66,7 +66,7 @@ cssClasses.forEach(cssClass => {
 
 console.log('\n🎉 Validation Complete!');
 console.log('\nTo test the webapp:');
-console.log('1. Serve from public/ directory (e.g., python3 -m http.server 8000)');
+console.log('1. Serve from docs/ directory (e.g., python3 -m http.server 8000)');
 console.log('2. Open http://localhost:8000 in a web browser');
 console.log('3. Upload images to create custom cards');
 console.log('4. Generate tablas for printing');

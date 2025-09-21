@@ -40,21 +40,21 @@ The webapp is hosted on GitHub Pages and ready to use:
 #### Enabling GitHub Pages Deployment:
 1. Go to repository **Settings** → **Pages**
 2. Under **Source**, select **Deploy from a branch**
-3. Choose **main** branch and **/public** folder (or configure custom build)
+3. Choose **main** branch and **/docs** folder (or configure custom build)
 4. Click **Save** - GitHub will deploy automatically
 5. Access your live webapp at the GitHub Pages URL
 
-**Note**: This project is structured with web assets in `/public` directory for clean separation of development and production files.
+**Note**: This project is structured with web assets in `/docs` directory for clean separation of development and production files.
 
 ### Local Development
 1. Clone this repository
-2. Navigate to the `public/` directory
+2. Navigate to the `docs/` directory
 3. Open `index.html` in your web browser or use a local server
 
 ### Using a Local Server
 ```bash
-# From the project root, serve the public directory
-cd public
+# From the project root, serve the docs directory
+cd docs
 
 # Using Python 3
 python3 -m http.server 8000
@@ -134,7 +134,7 @@ Then open http://localhost:8000 in your browser.
 ### File Structure
 ```
 lotteria/
-├── public/              # GitHub Pages hosting directory
+├── docs/              # GitHub Pages hosting directory
 │   ├── index.html      # Main application
 │   ├── style.css       # Responsive styling
 │   ├── script.js       # Application logic
