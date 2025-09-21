@@ -136,8 +136,10 @@ const winResult = game.checkForWin();
 console.log(`🏆 Win result: ${winResult || 'No win yet'}`);
 
 console.log('\n✅ All core features working correctly!');
-console.log('\n📱 Ready for browser testing:');
-console.log('   - Open index.html in any modern browser');  
-console.log('   - Upload your own photos to create custom cards');
-console.log('   - Play Mexican Bingo with personalized images');
-console.log('   - Enjoy with family and friends! 🎉');
+console.log('\n📱 Ready for full webapp testing:');
+console.log('   - Serve from public/ directory with a local server');  
+console.log('   - Upload photos and create custom cards');
+console.log('   - Generate and print tablas for players');
+console.log('   - Use Card Draw mode for iPad presentations');
+console.log('   - Test import/export and offline PWA features');
+console.log('   - Install as standalone app for offline use! 🎉');

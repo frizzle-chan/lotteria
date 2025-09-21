@@ -1,13 +1,15 @@
 {
   "name": "lotteria",
   "version": "1.0.0",
-  "description": "A Mexican Bingo (Lotería) webapp where you can upload photos to create custom game cards",
-  "main": "index.html",
+  "description": "Comprehensive Lotería (Mexican Bingo) PWA with photo upload, printable tabla generation, iPad-optimized Card Draw, cross-device sync, and offline functionality",
+  "main": "public/index.html",
   "scripts": {
-    "start": "python3 -m http.server 8000",
-    "dev": "python3 -m http.server 8000"
+    "start": "cd public && python3 -m http.server 8000",
+    "dev": "cd public && python3 -m http.server 8000",
+    "validate": "node validate.js",
+    "test-features": "node test-features.js"
   },
-  "keywords": ["loteria", "mexican-bingo", "bingo", "cards", "game"],
+  "keywords": ["loteria", "mexican-bingo", "bingo", "cards", "game", "pwa", "offline", "ipad", "print"],
   "author": "frizzle-chan",
   "license": "MIT",
   "devDependencies": {},
