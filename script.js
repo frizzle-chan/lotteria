@@ -7,6 +7,7 @@ class LoteriaGame {
         this.drawnCardsHistory = [];
         this.isFullscreen = false;
         this.pendingImportData = null;
+        this.isOnline = navigator.onLine;
         this.dbName = 'LoteriaDB';
         this.dbVersion = 1;
         this.db = null;
@@ -14,6 +15,7 @@ class LoteriaGame {
             this.loadCards().then(() => {
                 this.initializeEventListeners();
                 this.initializeDragAndDrop();
+                this.initializeOfflineSupport();
                 this.showSection('game-section');
                 this.generateTabla();
             });
@@ -899,6 +901,217 @@ class LoteriaGame {
             }
         };
         reader.readAsText(file);
+    }
+
+    // Initialize offline support and PWA features
+    initializeOfflineSupport() {
+        // Monitor network status
+        window.addEventListener('online', () => {
+            this.isOnline = true;
+            this.handleOnlineStatusChange();
+        });
+
+        window.addEventListener('offline', () => {
+            this.isOnline = false;
+            this.handleOnlineStatusChange();
+        });
+
+        // Initialize offline indicators
+        this.updateOfflineUI();
+
+        // Preload critical assets
+        this.preloadCriticalAssets();
+
+        // Setup cache status monitoring
+        this.initializeCacheStatus();
+
+        console.log('[PWA] Offline support initialized');
+    }
+
+    // Handle online/offline status changes
+    handleOnlineStatusChange() {
+        this.updateOfflineUI();
+        
+        if (this.isOnline) {
+            console.log('[PWA] Back online');
+            this.showConnectionStatus('Connected', 'success');
+        } else {
+            console.log('[PWA] Gone offline');
+            this.showConnectionStatus('Offline Mode', 'warning');
+        }
+    }
+
+    // Update UI based on offline status
+    updateOfflineUI() {
+        const body = document.body;
+        const offlineIndicator = document.getElementById('offline-indicator');
+        
+        if (this.isOnline) {
+            body.classList.remove('offline-mode');
+            if (offlineIndicator) {
+                offlineIndicator.classList.add('hidden');
+            }
+        } else {
+            body.classList.add('offline-mode');
+            if (offlineIndicator) {
+                offlineIndicator.classList.remove('hidden');
+            }
+        }
+
+        // Update button states for offline mode
+        this.updateButtonStatesForOffline();
+    }
+
+    // Update button states when offline
+    updateButtonStatesForOffline() {
+        // All core features work offline with IndexedDB
+        // No buttons need to be disabled
+        console.log('[PWA] All features available offline');
+    }
+
+    // Show connection status notification
+    showConnectionStatus(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `connection-status ${type}`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.opacity = '1';
+        }, 100);
+        
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
+    }
+
+    // Preload critical assets for offline use
+    async preloadCriticalAssets() {
+        if ('caches' in window) {
+            try {
+                const cache = await caches.open('loteria-runtime-v1.0');
+                
+                // Critical assets that should be available offline
+                const criticalAssets = [
+                    './style.css',
+                    './script.js',
+                    './manifest.json'
+                ];
+
+                for (const asset of criticalAssets) {
+                    try {
+                        await cache.add(asset);
+                        console.log(`[PWA] Cached: ${asset}`);
+                    } catch (error) {
+                        console.warn(`[PWA] Failed to cache: ${asset}`, error);
+                    }
+                }
+            } catch (error) {
+                console.error('[PWA] Cache initialization failed:', error);
+            }
+        }
+    }
+
+    // Initialize cache status monitoring
+    initializeCacheStatus() {
+        if ('caches' in window) {
+            this.monitorCacheStatus();
+        }
+    }
+
+    // Monitor cache status and usage
+    async monitorCacheStatus() {
+        try {
+            const cacheNames = await caches.keys();
+            const totalCaches = cacheNames.length;
+            
+            if (totalCaches > 0) {
+                console.log(`[PWA] ${totalCaches} caches active`);
+                this.showCacheStatus(`${totalCaches} caches ready`);
+            }
+        } catch (error) {
+            console.error('[PWA] Cache status check failed:', error);
+        }
+    }
+
+    // Show cache status indicator
+    showCacheStatus(message) {
+        const indicator = document.createElement('div');
+        indicator.className = 'cache-status';
+        indicator.textContent = message;
+        
+        document.body.appendChild(indicator);
+        
+        setTimeout(() => {
+            indicator.classList.add('visible');
+        }, 100);
+        
+        setTimeout(() => {
+            indicator.classList.remove('visible');
+            setTimeout(() => {
+                if (indicator.parentNode) {
+                    indicator.parentNode.removeChild(indicator);
+                }
+            }, 300);
+        }, 2000);
+    }
+
+    // Enhanced data persistence for offline use
+    async enhancedSaveCards() {
+        try {
+            // Save to IndexedDB (primary storage)
+            await this.saveCards();
+            
+            // Backup to cache storage for additional redundancy
+            if ('caches' in window) {
+                const cache = await caches.open('loteria-data-backup-v1.0');
+                const dataBlob = new Blob([JSON.stringify(this.cards)], { 
+                    type: 'application/json' 
+                });
+                const response = new Response(dataBlob);
+                await cache.put('./cards-backup.json', response);
+                console.log('[PWA] Cards backed up to cache');
+            }
+            
+        } catch (error) {
+            console.error('[PWA] Enhanced save failed:', error);
+            // Fallback to regular save
+            await this.saveCards();
+        }
+    }
+
+    // Offline-aware error handling
+    handleOfflineError(operation, error) {
+        console.error(`[PWA] ${operation} failed:`, error);
+        
+        if (!this.isOnline) {
+            alert(`${operation} failed in offline mode. This feature requires an internet connection.`);
+        } else {
+            alert(`${operation} failed. Please try again.`);
+        }
+    }
+
+    // Clear all caches (for debugging/reset)
+    async clearAllCaches() {
+        if ('caches' in window) {
+            try {
+                const cacheNames = await caches.keys();
+                await Promise.all(
+                    cacheNames.map(cacheName => caches.delete(cacheName))
+                );
+                console.log('[PWA] All caches cleared');
+                alert('All cached data cleared. The app will reload.');
+                window.location.reload();
+            } catch (error) {
+                console.error('[PWA] Cache clearing failed:', error);
+            }
+        }
     }
 
     // Render deck view
