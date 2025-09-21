@@ -14,6 +14,7 @@
                 <button id="upload-btn" class="nav-btn">Upload Cards</button>
                 <button id="new-game-btn" class="nav-btn">Generate Tabla</button>
                 <button id="view-deck-btn" class="nav-btn">View Deck</button>
+                <button id="print-cards-btn" class="nav-btn">Print All Cards</button>
             </nav>
         </header>
 
@@ -60,6 +61,24 @@
                 <div class="deck-actions">
                     <button id="clear-deck-btn" class="btn btn-danger">Clear All Cards</button>
                 </div>
+            </section>
+
+            <!-- Print All Cards Section -->
+            <section id="print-cards-section" class="section hidden">
+                <h2>Print All Cards</h2>
+                <div class="print-info">
+                    <p><strong>Print your entire deck:</strong></p>
+                    <ul>
+                        <li>Cards are optimized for cutting out (3:4 aspect ratio)</li>
+                        <li>Print on cardstock for best results</li>
+                        <li>Cut along the borders to create individual cards</li>
+                        <li>Use the printed cards to shuffle and call during the game</li>
+                    </ul>
+                </div>
+                <div class="print-cards-controls">
+                    <button id="print-all-cards-btn" class="btn btn-primary">Print All Cards</button>
+                </div>
+                <div id="all-cards-grid" class="all-cards-grid"></div>
             </section>
         </main>
     </div>

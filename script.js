@@ -150,6 +150,7 @@ class LoteriaGame {
         document.getElementById('upload-btn').addEventListener('click', () => this.showSection('upload-section'));
         document.getElementById('new-game-btn').addEventListener('click', () => this.newGame());
         document.getElementById('view-deck-btn').addEventListener('click', () => this.showDeckView());
+        document.getElementById('print-cards-btn').addEventListener('click', () => this.showPrintCardsView());
 
         // Upload functionality
         document.getElementById('browse-btn').addEventListener('click', () => document.getElementById('file-input').click());
@@ -165,6 +166,9 @@ class LoteriaGame {
         document.getElementById('draw-card-btn')?.addEventListener('click', () => this.drawCard());
         document.getElementById('generate-tabla-btn').addEventListener('click', () => this.generateTabla());
         document.getElementById('print-tabla-btn').addEventListener('click', () => this.printTabla());
+
+        // Print all cards controls
+        document.getElementById('print-all-cards-btn').addEventListener('click', () => this.printAllCards());
 
         // Modal controls
         document.getElementById('save-card-btn').addEventListener('click', () => this.saveCurrentCard());
@@ -190,6 +194,8 @@ class LoteriaGame {
             document.getElementById('new-game-btn').classList.add('active');
         } else if (sectionId === 'deck-section') {
             document.getElementById('view-deck-btn').classList.add('active');
+        } else if (sectionId === 'print-cards-section') {
+            document.getElementById('print-cards-btn').classList.add('active');
         }
     }
 
@@ -346,7 +352,21 @@ class LoteriaGame {
 
     // Print tabla function
     printTabla() {
+        if (this.currentTabla.length === 0) {
+            alert('No tabla available to print. Please generate a tabla first.');
+            return;
+        }
+
+        // Add class to body to identify what we're printing
+        document.body.classList.add('printing-tabla');
+        
+        // Print the page
         window.print();
+        
+        // Remove the class after printing
+        setTimeout(() => {
+            document.body.classList.remove('printing-tabla');
+        }, 1000);
     }
 
     // Generate new tabla (simplified for printing focus)
@@ -359,6 +379,58 @@ class LoteriaGame {
     showDeckView() {
         this.showSection('deck-section');
         this.renderDeckView();
+    }
+
+    // Show print cards view
+    showPrintCardsView() {
+        this.showSection('print-cards-section');
+        this.renderAllCardsForPrint();
+    }
+
+    // Render all cards for printing
+    renderAllCardsForPrint() {
+        const allCardsGrid = document.getElementById('all-cards-grid');
+        allCardsGrid.innerHTML = '';
+
+        if (this.cards.length === 0) {
+            allCardsGrid.innerHTML = '<p style="text-align: center; color: #718096; grid-column: 1/-1;">No cards available. Upload some images to get started!</p>';
+            return;
+        }
+
+        // Sort cards by number for consistent printing order
+        const sortedCards = [...this.cards].sort((a, b) => a.number - b.number);
+
+        sortedCards.forEach(card => {
+            const cardDiv = document.createElement('div');
+            cardDiv.className = 'print-card';
+            cardDiv.innerHTML = `
+                <img src="${card.image}" alt="${card.name}">
+                <div class="card-info">
+                    <div class="card-name">${card.name}</div>
+                    <div class="card-number">#${card.number}</div>
+                </div>
+            `;
+            allCardsGrid.appendChild(cardDiv);
+        });
+    }
+
+    // Print all cards
+    printAllCards() {
+        if (this.cards.length === 0) {
+            alert('No cards available to print. Please upload some cards first.');
+            return;
+        }
+
+        // Add class to body to identify what we're printing
+        document.body.classList.add('printing-cards');
+        
+        // Print the page
+        window.print();
+        
+        // Remove the class after printing
+        setTimeout(() => {
+            document.body.classList.remove('printing-cards');
+        }, 1000);
     }
 
     // Render deck view

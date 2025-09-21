@@ -348,6 +348,91 @@ nav {
     margin-bottom: 5px;
 }
 
+/* Print All Cards Section */
+.print-info {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.print-info p {
+    margin-bottom: 10px;
+    color: #495057;
+}
+
+.print-info ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.print-info li {
+    margin-bottom: 5px;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.print-cards-controls {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.all-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    max-width: 100%;
+    margin: 0 auto;
+    background: white;
+    padding: 15px;
+    border: 2px solid #333;
+}
+
+.print-card {
+    aspect-ratio: 3/4;
+    border: 2px solid #333;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    padding: 8px;
+    position: relative;
+    page-break-inside: avoid;
+}
+
+.print-card img {
+    width: 100%;
+    height: 70%;
+    object-fit: cover;
+    border-radius: 2px;
+    border: 1px solid #ddd;
+}
+
+.print-card .card-info {
+    width: 100%;
+    text-align: center;
+    margin-top: 4px;
+}
+
+.print-card .card-name {
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1.1;
+    color: #333;
+    margin-bottom: 2px;
+    word-wrap: break-word;
+    hyphens: auto;
+}
+
+.print-card .card-number {
+    font-size: 10px;
+    color: #666;
+    font-weight: bold;
+}
+
 .deck-card .card-number {
     color: #667eea;
     font-size: 14px;
@@ -451,14 +536,61 @@ nav {
     }
     
     header, .nav-btn, .btn, .game-info, .game-stats, 
-    #upload-section, #deck-section, .section.hidden {
+    #upload-section, #deck-section, .section.hidden, .print-info, .print-cards-controls {
         display: none !important;
     }
     
-    #game-section {
+    #game-section, #print-cards-section {
         display: block !important;
         background: white;
         padding: 20px;
+    }
+    
+    /* Show only the section being printed */
+    body.printing-tabla #print-cards-section {
+        display: none !important;
+    }
+    
+    body.printing-cards #game-section {
+        display: none !important;
+    }
+    
+    /* All cards print layout */
+    #print-cards-section h2 {
+        display: none;
+    }
+    
+    .all-cards-grid {
+        max-width: none;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        border: none;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 4px;
+        page-break-inside: avoid;
+    }
+    
+    .print-card {
+        border: 2px solid black;
+        border-radius: 2px;
+        padding: 4px;
+        background: white;
+        page-break-inside: avoid;
+    }
+    
+    .print-card img {
+        border: 1px solid black;
+    }
+    
+    .print-card .card-name {
+        font-size: 10px;
+        color: black;
+    }
+    
+    .print-card .card-number {
+        font-size: 8px;
+        color: black;
     }
     
     .game-board h3 {
