@@ -1,0 +1,15 @@
+{
+  "name": "lotteria",
+  "version": "1.0.0",
+  "description": "A Mexican Bingo (Lotería) webapp where you can upload photos to create custom game cards",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "dev": "python3 -m http.server 8000"
+  },
+  "keywords": ["loteria", "mexican-bingo", "bingo", "cards", "game"],
+  "author": "frizzle-chan",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {}
+}

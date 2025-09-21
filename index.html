@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lotería - Mexican Bingo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 Lotería - Mexican Bingo</h1>
+            <nav>
+                <button id="upload-btn" class="nav-btn">Upload Cards</button>
+                <button id="new-game-btn" class="nav-btn">New Game</button>
+                <button id="view-deck-btn" class="nav-btn">View Deck</button>
+            </nav>
+        </header>
+
+        <main>
+            <!-- Upload Section -->
+            <section id="upload-section" class="section hidden">
+                <h2>Upload Your Cards</h2>
+                <div class="upload-area">
+                    <input type="file" id="file-input" multiple accept="image/*" hidden>
+                    <div id="drop-zone" class="drop-zone">
+                        <p>Drop images here or click to upload</p>
+                        <button id="browse-btn" class="btn">Browse Files</button>
+                    </div>
+                </div>
+                <div id="upload-previews" class="upload-previews"></div>
+            </section>
+
+            <!-- Game Section -->
+            <section id="game-section" class="section">
+                <div class="game-info">
+                    <div id="current-card" class="current-card">
+                        <h3>Current Card</h3>
+                        <div id="drawn-card" class="drawn-card-placeholder">
+                            <p>Click "Draw Card" to start the game!</p>
+                        </div>
+                        <button id="draw-card-btn" class="btn btn-primary">Draw Card</button>
+                    </div>
+                    <div class="game-stats">
+                        <p>Cards in deck: <span id="deck-count">0</span></p>
+                        <p>Cards drawn: <span id="drawn-count">0</span></p>
+                    </div>
+                </div>
+                
+                <div class="game-board">
+                    <h3>Your Tabla (4×4 Board)</h3>
+                    <div id="tabla" class="tabla"></div>
+                    <button id="generate-tabla-btn" class="btn">Generate New Tabla</button>
+                </div>
+            </section>
+
+            <!-- Deck View Section -->
+            <section id="deck-section" class="section hidden">
+                <h2>Your Card Deck</h2>
+                <div id="deck-grid" class="deck-grid"></div>
+                <div class="deck-actions">
+                    <button id="clear-deck-btn" class="btn btn-danger">Clear All Cards</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Card Upload Modal -->
+    <div id="card-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Add Card Details</h3>
+            <img id="modal-image" src="" alt="Card preview">
+            <input type="text" id="card-name" placeholder="Enter card name" maxlength="30">
+            <div class="modal-actions">
+                <button id="save-card-btn" class="btn btn-primary">Save Card</button>
+                <button id="cancel-card-btn" class="btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
