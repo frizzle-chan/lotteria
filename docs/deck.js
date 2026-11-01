@@ -30,14 +30,19 @@ export const isImportableCard = (card) =>
     typeof card.image === 'string' &&
     card.image !== '';
 
-// Underscore-prefixed members are private. (Not #private: that needs Safari/iPadOS 15.)
 export class Deck {
+    #store;
+    #cards;
+    #listeners;
+    #newId;
+    #queue;
+
     constructor(store, cards = [], { newId } = {}) {
-        this._store = store;
-        this._cards = cards.map((card) => ({ ...card }));
-        this._listeners = new Set();
-        this._newId = newId || (() => Date.now() + Math.random());
-        this._queue = Promise.resolve();
+        this.#store = store;
+        this.#cards = cards.map((card) => ({ ...card }));
+        this.#listeners = new Set();
+        this.#newId = newId || (() => Date.now() + Math.random());
+        this.#queue = Promise.resolve();
     }
 
     // Load a Deck from a card store, in card-number order.
@@ -48,28 +53,28 @@ export class Deck {
     }
 
     get size() {
-        return this._cards.length;
+        return this.#cards.length;
     }
 
     // A copy of the cards in number order; mutating it does not touch the Deck.
     list() {
-        return this._cards.map((card) => ({ ...card }));
+        return this.#cards.map((card) => ({ ...card }));
     }
 
     has(name) {
         const key = nameKey(name);
-        return this._cards.some((card) => nameKey(card.name) === key);
+        return this.#cards.some((card) => nameKey(card.name) === key);
     }
 
     // Called with the new card list after every successful change. Returns an unsubscribe function.
     subscribe(listener) {
-        this._listeners.add(listener);
-        return () => this._listeners.delete(listener);
+        this.#listeners.add(listener);
+        return () => this.#listeners.delete(listener);
     }
 
     // Add one card. Throws DeckError('empty-name' | 'duplicate-name'); store errors propagate unchanged.
     add(name, image) {
-        return this._serialize(async () => {
+        return this.#serialize(async () => {
             const trimmed = typeof name === 'string' ? name.trim() : '';
             if (!trimmed) {
                 throw new DeckError('Please enter a card name', 'empty-name');
@@ -79,14 +84,14 @@ export class Deck {
             }
 
             const card = {
-                id: this._mintId(new Set(this._cards.map((c) => c.id))),
+                id: this.#mintId(new Set(this.#cards.map((c) => c.id))),
                 name: trimmed,
                 image,
-                number: nextNumber(this._cards),
+                number: nextNumber(this.#cards),
             };
 
-            await this._store.add(card);
-            this._commit([...this._cards, card]);
+            await this.#store.add(card);
+            this.#commit([...this.#cards, card]);
             return { ...card };
         });
     }
@@ -99,7 +104,7 @@ export class Deck {
     // Returns { added, skipped, renamed } counts.
     // Throws DeckError('bad-mode' | 'empty-import'); an empty import never touches the Deck.
     import(incoming, mode) {
-        return this._serialize(async () => {
+        return this.#serialize(async () => {
             if (!IMPORT_MODES.includes(mode)) {
                 throw new DeckError(`Unknown import mode "${mode}"`, 'bad-mode');
             }
@@ -110,30 +115,30 @@ export class Deck {
             }
 
             const result = mode === 'replace'
-                ? this._planReplace(valid)
-                : this._planAdd(valid, mode === 'append');
+                ? this.#planReplace(valid)
+                : this.#planAdd(valid, mode === 'append');
 
-            await this._store.replaceAll(result.cards);
-            this._commit(result.cards);
+            await this.#store.replaceAll(result.cards);
+            this.#commit(result.cards);
             return { added: result.added, skipped: result.skipped + all.length - valid.length, renamed: result.renamed };
         });
     }
 
     clear() {
-        return this._serialize(async () => {
-            await this._store.replaceAll([]);
-            this._commit([]);
+        return this.#serialize(async () => {
+            await this.#store.replaceAll([]);
+            this.#commit([]);
         });
     }
 
     // Run changes one at a time, so each one plans against the result of the previous one.
-    _serialize(work) {
-        const run = this._queue.then(work);
-        this._queue = run.catch(() => {});
+    #serialize(work) {
+        const run = this.#queue.then(work);
+        this.#queue = run.catch(() => {});
         return run;
     }
 
-    _planReplace(incoming) {
+    #planReplace(incoming) {
         const cards = [];
         const names = new Set();
         const ids = new Set();
@@ -151,7 +156,7 @@ export class Deck {
 
             const id = source.id !== undefined && source.id !== null && !ids.has(source.id)
                 ? source.id
-                : this._mintId(ids, incoming);
+                : this.#mintId(ids, incoming);
             ids.add(id);
 
             const card = { id, name, image: source.image, number: source.number };
@@ -172,8 +177,8 @@ export class Deck {
         return { cards, added: cards.length, skipped, renamed: 0 };
     }
 
-    _planAdd(incoming, renameDuplicates) {
-        const cards = [...this._cards];
+    #planAdd(incoming, renameDuplicates) {
+        const cards = [...this.#cards];
         const names = new Set(cards.map((card) => nameKey(card.name)));
         const ids = new Set(cards.map((card) => card.id));
         let next = nextNumber(cards);
@@ -193,7 +198,7 @@ export class Deck {
             }
             names.add(nameKey(name));
 
-            const id = this._mintId(ids, incoming);
+            const id = this.#mintId(ids, incoming);
             ids.add(id);
             cards.push({ id, name, image: source.image, number: next++ });
             added++;
@@ -202,19 +207,19 @@ export class Deck {
         return { cards, added, skipped, renamed };
     }
 
-    _mintId(taken, incoming = []) {
+    #mintId(taken, incoming = []) {
         const reserved = new Set(incoming.map((card) => card && card.id));
-        let id = this._newId();
+        let id = this.#newId();
         while (taken.has(id) || reserved.has(id)) {
-            id = this._newId();
+            id = this.#newId();
         }
         return id;
     }
 
-    _commit(cards) {
-        this._cards = cards;
+    #commit(cards) {
+        this.#cards = cards;
         const snapshot = this.list();
-        this._listeners.forEach((listener) => listener(snapshot));
+        this.#listeners.forEach((listener) => listener(snapshot));
     }
 }
 
@@ -253,8 +258,10 @@ export class MemoryCardStore {
 // Card store adapter backed by IndexedDB. Each write is one transaction:
 // it resolves when the transaction commits and rejects if it aborts.
 export class IndexedDBCardStore {
+    #db;
+
     constructor(db) {
-        this._db = db;
+        this.#db = db;
     }
 
     static open(dbName = 'LoteriaDB', version = 1) {
@@ -275,26 +282,26 @@ export class IndexedDBCardStore {
 
     loadAll() {
         return new Promise((resolve, reject) => {
-            const request = this._db.transaction('cards', 'readonly').objectStore('cards').getAll();
+            const request = this.#db.transaction('cards', 'readonly').objectStore('cards').getAll();
             request.onsuccess = () => resolve(request.result || []);
             request.onerror = () => reject(request.error);
         });
     }
 
     add(card) {
-        return this._write((store) => store.add(card));
+        return this.#write((store) => store.add(card));
     }
 
     replaceAll(cards) {
-        return this._write((store) => {
+        return this.#write((store) => {
             store.clear();
             cards.forEach((card) => store.add(card));
         });
     }
 
-    _write(work) {
+    #write(work) {
         return new Promise((resolve, reject) => {
-            const transaction = this._db.transaction('cards', 'readwrite');
+            const transaction = this.#db.transaction('cards', 'readwrite');
             transaction.oncomplete = () => resolve();
             // A failed request reaches onerror first; transaction.error is still null then, so use the request's error.
             transaction.onerror = (event) => reject(event.target.error || transaction.error);
