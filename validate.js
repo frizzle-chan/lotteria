@@ -4,12 +4,13 @@ console.log('=============================');
 
 // Test 1: Check if core functions exist
 const fs = require('fs');
-const scriptContent = fs.readFileSync('docs/script.js', 'utf8');
+const scriptContent = fs.readFileSync('docs/script.js', 'utf8') + fs.readFileSync('docs/deck.js', 'utf8');
 
 const features = [
     'class LoteriaGame',
-    'loadCards()',
-    'saveCards()',
+    'class Deck',
+    'class IndexedDBCardStore',
+    'class MemoryCardStore',
     'generateTabla()',
     'drawCard()',
     'handleFileSelect',

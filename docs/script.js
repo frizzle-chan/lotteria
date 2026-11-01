@@ -1,154 +1,37 @@
-// Lotería Game Logic with IndexedDB storage
+// Lotería Game UI. Deck rules and storage live in deck.js.
+import { Deck, DeckError, IndexedDBCardStore } from './deck.js';
+
 class LoteriaGame {
     constructor() {
-        this.cards = [];
+        this.deck = null;
         this.currentTabla = [];
         this.drawnCards = [];
         this.drawnCardsHistory = [];
         this.isFullscreen = false;
         this.pendingImportData = null;
         this.isOnline = navigator.onLine;
-        this.dbName = 'LoteriaDB';
-        this.dbVersion = 1;
-        this.db = null;
-        this.initializeDatabase().then(() => {
-            this.loadCards().then(() => {
-                this.initializeEventListeners();
-                this.initializeDragAndDrop();
-                this.initializeOfflineSupport();
-                this.showSection('game-section');
-                this.generateTabla();
-            });
-        });
+        this.ready = this.initialize();
     }
 
-    // Initialize IndexedDB
-    async initializeDatabase() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, this.dbVersion);
-            
-            request.onerror = () => {
-                console.error('Failed to open IndexedDB:', request.error);
-                reject(request.error);
-            };
-            
-            request.onsuccess = () => {
-                this.db = request.result;
-                console.log('IndexedDB initialized successfully');
-                resolve(this.db);
-            };
-            
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                
-                // Create object store for cards
-                if (!db.objectStoreNames.contains('cards')) {
-                    const cardStore = db.createObjectStore('cards', { keyPath: 'id' });
-                    cardStore.createIndex('name', 'name', { unique: true });
-                    cardStore.createIndex('number', 'number', { unique: false });
-                }
-            };
-        });
+    async initialize() {
+        try {
+            this.deck = await Deck.open(await IndexedDBCardStore.open());
+        } catch (error) {
+            console.error('Failed to open card storage:', error);
+            alert('Could not open card storage. Cards cannot be saved in this browser.');
+            return;
+        }
+        this.deck.subscribe(() => this.updateDeckCount());
+        this.initializeEventListeners();
+        this.initializeDragAndDrop();
+        this.initializeOfflineSupport();
+        this.showSection('game-section');
+        this.generateTabla();
     }
 
-    // Load cards from IndexedDB
-    async loadCards() {
-        return new Promise((resolve, reject) => {
-            if (!this.db) {
-                reject(new Error('Database not initialized'));
-                return;
-            }
-            
-            const transaction = this.db.transaction(['cards'], 'readonly');
-            const store = transaction.objectStore('cards');
-            const request = store.getAll();
-            
-            request.onsuccess = () => {
-                this.cards = request.result || [];
-                console.log(`Loaded ${this.cards.length} cards from IndexedDB`);
-                resolve(this.cards);
-            };
-            
-            request.onerror = () => {
-                console.error('Failed to load cards:', request.error);
-                reject(request.error);
-            };
-        });
-    }
-
-    // Save all cards to IndexedDB
-    async saveCards() {
-        return new Promise((resolve, reject) => {
-            if (!this.db) {
-                reject(new Error('Database not initialized'));
-                return;
-            }
-            
-            const transaction = this.db.transaction(['cards'], 'readwrite');
-            const store = transaction.objectStore('cards');
-            
-            // Clear existing cards and add all current cards
-            const clearRequest = store.clear();
-            
-            clearRequest.onsuccess = () => {
-                // Add all cards
-                let addedCount = 0;
-                const totalCards = this.cards.length;
-                
-                if (totalCards === 0) {
-                    this.updateDeckCount();
-                    resolve();
-                    return;
-                }
-                
-                this.cards.forEach(card => {
-                    const addRequest = store.add(card);
-                    
-                    addRequest.onsuccess = () => {
-                        addedCount++;
-                        if (addedCount === totalCards) {
-                            console.log(`Saved ${addedCount} cards to IndexedDB`);
-                            this.updateDeckCount();
-                            resolve();
-                        }
-                    };
-                    
-                    addRequest.onerror = () => {
-                        console.error('Failed to save card:', card.name, addRequest.error);
-                        reject(addRequest.error);
-                    };
-                });
-            };
-            
-            clearRequest.onerror = () => {
-                console.error('Failed to clear cards store:', clearRequest.error);
-                reject(clearRequest.error);
-            };
-        });
-    }
-
-    // Add a single card to IndexedDB
-    async addCard(card) {
-        return new Promise((resolve, reject) => {
-            if (!this.db) {
-                reject(new Error('Database not initialized'));
-                return;
-            }
-            
-            const transaction = this.db.transaction(['cards'], 'readwrite');
-            const store = transaction.objectStore('cards');
-            const request = store.add(card);
-            
-            request.onsuccess = () => {
-                console.log('Card added to IndexedDB:', card.name);
-                resolve(card);
-            };
-            
-            request.onerror = () => {
-                console.error('Failed to add card:', request.error);
-                reject(request.error);
-            };
-        });
+    // Read-only snapshot of the Deck for rendering.
+    get cards() {
+        return this.deck ? this.deck.list() : [];
     }
 
     // Initialize all event listeners
@@ -281,54 +164,42 @@ class LoteriaGame {
         const baseName = fileName.replace(/\.[^/.]+$/, "").replace(/[-_]/g, ' ');
         
         cardDiv.innerHTML = `
-            <img src="${imageSrc}" alt="Preview">
-            <input type="text" placeholder="Card name" value="${baseName}" maxlength="30">
-            <button class="btn btn-primary" onclick="game.addCardFromPreview(this, '${imageSrc}')">Add Card</button>
-            <button class="btn" onclick="this.parentElement.remove()">Remove</button>
+            <img alt="Preview">
+            <input type="text" placeholder="Card name" maxlength="30">
+            <button class="btn btn-primary" data-action="add">Add Card</button>
+            <button class="btn" data-action="remove">Remove</button>
         `;
-        
+        cardDiv.querySelector('img').src = imageSrc;
+        cardDiv.querySelector('input').value = baseName;
+        cardDiv.querySelector('[data-action="add"]').addEventListener('click', () => this.addCardFromPreview(cardDiv, imageSrc));
+        cardDiv.querySelector('[data-action="remove"]').addEventListener('click', () => cardDiv.remove());
+
         previewContainer.appendChild(cardDiv);
     }
 
-    // Add card from preview with IndexedDB storage
-    async addCardFromPreview(button, imageSrc) {
-        const previewCard = button.parentElement;
+    // Add card from an upload preview
+    async addCardFromPreview(previewCard, imageSrc) {
         const nameInput = previewCard.querySelector('input');
-        const cardName = nameInput.value.trim();
-        
-        if (!cardName) {
-            alert('Please enter a card name');
-            return;
-        }
-
-        // Check if card already exists
-        if (this.cards.some(card => card.name.toLowerCase() === cardName.toLowerCase())) {
-            alert('A card with this name already exists');
-            return;
-        }
-
-        const newCard = {
-            id: Date.now() + Math.random(),
-            name: cardName,
-            image: imageSrc,
-            number: this.cards.length + 1
-        };
-
-        try {
-            // Add to local array first
-            this.cards.push(newCard);
-            
-            // Add to IndexedDB
-            await this.addCard(newCard);
-            
+        const card = await this.addCardToDeck(nameInput.value, imageSrc);
+        if (card) {
             previewCard.remove();
-            this.showSuccessMessage(`Card "${cardName}" added successfully!`);
-            this.updateDeckCount();
+        }
+    }
+
+    // Add a card to the Deck, reporting the outcome to the user. Returns the card, or null on failure.
+    async addCardToDeck(name, imageSrc) {
+        try {
+            const card = await this.deck.add(name, imageSrc);
+            this.showSuccessMessage(`Card "${card.name}" added successfully!`);
+            return card;
         } catch (error) {
-            // Remove from local array if IndexedDB save failed
-            this.cards.pop();
-            console.error('Failed to save card:', error);
-            alert(`Failed to save card "${cardName}". Please try again.`);
+            if (error instanceof DeckError) {
+                alert(error.message);
+            } else {
+                console.error('Failed to save card:', error);
+                alert(`Failed to save card "${name.trim()}". Please try again.`);
+            }
+            return null;
         }
     }
 
@@ -774,45 +645,16 @@ class LoteriaGame {
         this.showImportProgress();
 
         try {
-            let finalCards = [];
-            
-            switch (importMode) {
-                case 'replace':
-                    finalCards = [...this.pendingImportData.cards];
-                    break;
-                    
-                case 'merge':
-                    finalCards = [...this.cards];
-                    this.pendingImportData.cards.forEach(newCard => {
-                        const exists = finalCards.some(card => 
-                            card.name.toLowerCase() === newCard.name.toLowerCase()
-                        );
-                        if (!exists) {
-                            finalCards.push(newCard);
-                        }
-                    });
-                    break;
-                    
-                case 'append':
-                    finalCards = [...this.cards, ...this.pendingImportData.cards];
-                    break;
-            }
+            const { added, skipped, renamed } = await this.deck.import(this.pendingImportData.cards, importMode);
 
-            // Update cards and save to IndexedDB
-            this.cards = finalCards;
-            await this.saveCards();
-            
-            // Update UI
             this.renderDeckView();
-            this.updateDeckCount();
-            
-            // Hide modal and show success
             modal.classList.add('hidden');
             this.hideImportProgress();
-            
-            const importedCount = this.pendingImportData.cards.length;
-            alert(`Successfully imported ${importedCount} cards!`);
-            
+
+            const details = [];
+            if (renamed) details.push(`${renamed} renamed to avoid duplicates`);
+            if (skipped) details.push(`${skipped} skipped`);
+            alert(`Successfully imported ${added} cards!${details.length ? ` (${details.join(', ')})` : ''}`);
         } catch (error) {
             console.error('Import failed:', error);
             alert('Import failed. Please try again.');
@@ -1062,30 +904,6 @@ class LoteriaGame {
         }, 2000);
     }
 
-    // Enhanced data persistence for offline use
-    async enhancedSaveCards() {
-        try {
-            // Save to IndexedDB (primary storage)
-            await this.saveCards();
-            
-            // Backup to cache storage for additional redundancy
-            if ('caches' in window) {
-                const cache = await caches.open('loteria-data-backup-v1.0');
-                const dataBlob = new Blob([JSON.stringify(this.cards)], { 
-                    type: 'application/json' 
-                });
-                const response = new Response(dataBlob);
-                await cache.put('./cards-backup.json', response);
-                console.log('[PWA] Cards backed up to cache');
-            }
-            
-        } catch (error) {
-            console.error('[PWA] Enhanced save failed:', error);
-            // Fallback to regular save
-            await this.saveCards();
-        }
-    }
-
     // Offline-aware error handling
     handleOfflineError(operation, error) {
         console.error(`[PWA] ${operation} failed:`, error);
@@ -1136,13 +954,12 @@ class LoteriaGame {
         });
     }
 
-    // Clear all cards from IndexedDB
+    // Delete every card in the Deck
     async clearDeck() {
         if (confirm('Are you sure you want to delete all cards? This action cannot be undone.')) {
             try {
-                this.cards = [];
+                await this.deck.clear();
                 this.currentTabla = [];
-                await this.saveCards();
                 this.renderDeckView();
                 this.showSuccessMessage('All cards have been deleted.');
             } catch (error) {
@@ -1156,11 +973,8 @@ class LoteriaGame {
     updateDeckCount() {
         const deckCountElement = document.getElementById('deck-count');
         if (deckCountElement) {
-            deckCountElement.textContent = this.cards.length;
+            deckCountElement.textContent = this.deck.size;
         }
-        
-        // Log current storage info for IndexedDB
-        console.log(`Cards in IndexedDB: ${this.cards.length}`);
     }
 
     // Modal functionality
@@ -1178,33 +992,18 @@ class LoteriaGame {
     }
 
     // Save current card from modal
-    saveCurrentCard() {
-        const cardName = document.getElementById('card-name').value.trim();
+    async saveCurrentCard() {
+        const name = document.getElementById('card-name').value;
         const imageSrc = document.getElementById('modal-image').src;
-        
-        if (!cardName) {
-            alert('Please enter a card name');
-            return;
+        if (await this.addCardToDeck(name, imageSrc)) {
+            this.hideModal();
         }
-
-        const newCard = {
-            id: Date.now() + Math.random(),
-            name: cardName,
-            image: imageSrc,
-            number: this.cards.length + 1
-        };
-
-        this.cards.push(newCard);
-        this.saveCards();
-        this.hideModal();
-        this.showSuccessMessage(`Card "${cardName}" added successfully!`);
     }
 }
 
 // Initialize the game when page loads
-let game;
 document.addEventListener('DOMContentLoaded', () => {
-    game = new LoteriaGame();
+    new LoteriaGame();
 });
 
 // Prevent default drag behaviors
