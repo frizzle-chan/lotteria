@@ -128,3 +128,49 @@ test('subscribers hear about successful changes only', async () => {
     await deck.add('El Sol', 'i');
     assert.deepEqual(sizes, [1, 0]);
 });
+
+class SlowStore extends MemoryCardStore {
+    async add(card) { await new Promise((r) => setTimeout(r, 10)); return super.add(card); }
+    async replaceAll(cards) { await new Promise((r) => setTimeout(r, 10)); return super.replaceAll(cards); }
+}
+
+test('concurrent adds get distinct numbers', async () => {
+    const deck = await Deck.open(new SlowStore(), { newId });
+    await Promise.all([deck.add('Y', 'i'), deck.add('Z', 'i')]);
+    assert.deepEqual(deck.list().map((c) => `${c.name}#${c.number}`), ['Y#1', 'Z#2']);
+});
+
+test('a double add of the same name reports duplicate-name', async () => {
+    const deck = await Deck.open(new SlowStore(), { newId });
+    const [first, second] = await Promise.allSettled([deck.add('Y', 'i'), deck.add('Y', 'i')]);
+    assert.equal(first.status, 'fulfilled');
+    assert.equal(second.reason.code, 'duplicate-name');
+    assert.equal(deck.size, 1);
+});
+
+test('an add during an import is not lost', async () => {
+    const store = new SlowStore();
+    const deck = await Deck.open(store, { newId });
+    await Promise.all([deck.import([{ name: 'A', image: 'i' }], 'merge'), deck.add('B', 'i')]);
+    assert.deepEqual(deck.list().map((c) => c.name), ['A', 'B']);
+    assert.deepEqual((await Deck.open(store)).list().map((c) => c.name), ['A', 'B']);
+});
+
+test('a failed change does not block later ones', async () => {
+    const deck = await deckWith(['Y']);
+    await assert.rejects(deck.add('Y', 'i'));
+    await deck.add('Z', 'i');
+    assert.equal(deck.size, 2);
+});
+
+test('an import with no valid cards throws and leaves the deck alone', async () => {
+    const store = new MemoryCardStore();
+    const deck = await Deck.open(store, { newId });
+    await deck.add('La Luna', 'i');
+    for (const mode of ['replace', 'merge', 'append']) {
+        await assert.rejects(deck.import([{ name: '' }, null], mode), { code: 'empty-import' });
+        await assert.rejects(deck.import([], mode), { code: 'empty-import' });
+    }
+    assert.deepEqual(deck.list().map((c) => c.name), ['La Luna']);
+    assert.equal(store.cards.length, 1);
+});

@@ -21,7 +21,8 @@ export class DeckError extends Error {
 
 const nameKey = (name) => name.trim().toLowerCase();
 
-const isImportableCard = (card) =>
+// True when a deck-file card has what the Deck needs to import it.
+export const isImportableCard = (card) =>
     card !== null &&
     typeof card === 'object' &&
     typeof card.name === 'string' &&
@@ -29,16 +30,14 @@ const isImportableCard = (card) =>
     typeof card.image === 'string' &&
     card.image !== '';
 
+// Underscore-prefixed members are private. (Not #private: that needs Safari/iPadOS 15.)
 export class Deck {
-    #store;
-    #cards;
-    #listeners = new Set();
-    #newId;
-
     constructor(store, cards = [], { newId } = {}) {
-        this.#store = store;
-        this.#cards = cards.map((card) => ({ ...card }));
-        this.#newId = newId ?? (() => Date.now() + Math.random());
+        this._store = store;
+        this._cards = cards.map((card) => ({ ...card }));
+        this._listeners = new Set();
+        this._newId = newId || (() => Date.now() + Math.random());
+        this._queue = Promise.resolve();
     }
 
     // Load a Deck from a card store, in card-number order.
@@ -49,45 +48,47 @@ export class Deck {
     }
 
     get size() {
-        return this.#cards.length;
+        return this._cards.length;
     }
 
-    // A copy of the cards in insertion order; mutating it does not touch the Deck.
+    // A copy of the cards in number order; mutating it does not touch the Deck.
     list() {
-        return this.#cards.map((card) => ({ ...card }));
+        return this._cards.map((card) => ({ ...card }));
     }
 
     has(name) {
         const key = nameKey(name);
-        return this.#cards.some((card) => nameKey(card.name) === key);
+        return this._cards.some((card) => nameKey(card.name) === key);
     }
 
     // Called with the new card list after every successful change. Returns an unsubscribe function.
     subscribe(listener) {
-        this.#listeners.add(listener);
-        return () => this.#listeners.delete(listener);
+        this._listeners.add(listener);
+        return () => this._listeners.delete(listener);
     }
 
     // Add one card. Throws DeckError('empty-name' | 'duplicate-name'); store errors propagate unchanged.
-    async add(name, image) {
-        const trimmed = typeof name === 'string' ? name.trim() : '';
-        if (!trimmed) {
-            throw new DeckError('Please enter a card name', 'empty-name');
-        }
-        if (this.has(trimmed)) {
-            throw new DeckError(`A card named "${trimmed}" already exists`, 'duplicate-name');
-        }
+    add(name, image) {
+        return this._serialize(async () => {
+            const trimmed = typeof name === 'string' ? name.trim() : '';
+            if (!trimmed) {
+                throw new DeckError('Please enter a card name', 'empty-name');
+            }
+            if (this.has(trimmed)) {
+                throw new DeckError(`A card named "${trimmed}" already exists`, 'duplicate-name');
+            }
 
-        const card = {
-            id: this.#mintId(new Set(this.#cards.map((c) => c.id))),
-            name: trimmed,
-            image,
-            number: this.#nextNumber(this.#cards),
-        };
+            const card = {
+                id: this._mintId(new Set(this._cards.map((c) => c.id))),
+                name: trimmed,
+                image,
+                number: nextNumber(this._cards),
+            };
 
-        await this.#store.add(card);
-        this.#commit([...this.#cards, card]);
-        return { ...card };
+            await this._store.add(card);
+            this._commit([...this._cards, card]);
+            return { ...card };
+        });
     }
 
     // Import cards from a deck file.
@@ -96,28 +97,43 @@ export class Deck {
     //   append:  add every incoming card, renaming duplicates "Name (2)", "Name (3)", ...
     // Merged and appended cards get fresh ids and numbers continuing after the Deck.
     // Returns { added, skipped, renamed } counts.
-    async import(incoming, mode) {
-        if (!IMPORT_MODES.includes(mode)) {
-            throw new DeckError(`Unknown import mode "${mode}"`, 'bad-mode');
-        }
-        const valid = (Array.isArray(incoming) ? incoming : []).filter(isImportableCard);
-        const invalid = (Array.isArray(incoming) ? incoming.length : 0) - valid.length;
+    // Throws DeckError('bad-mode' | 'empty-import'); an empty import never touches the Deck.
+    import(incoming, mode) {
+        return this._serialize(async () => {
+            if (!IMPORT_MODES.includes(mode)) {
+                throw new DeckError(`Unknown import mode "${mode}"`, 'bad-mode');
+            }
+            const all = Array.isArray(incoming) ? incoming : [];
+            const valid = all.filter(isImportableCard);
+            if (valid.length === 0) {
+                throw new DeckError('No valid cards found in the import file.', 'empty-import');
+            }
 
-        const result = mode === 'replace'
-            ? this.#planReplace(valid)
-            : this.#planAdd(valid, mode === 'append');
+            const result = mode === 'replace'
+                ? this._planReplace(valid)
+                : this._planAdd(valid, mode === 'append');
 
-        await this.#store.replaceAll(result.cards);
-        this.#commit(result.cards);
-        return { added: result.added, skipped: result.skipped + invalid, renamed: result.renamed };
+            await this._store.replaceAll(result.cards);
+            this._commit(result.cards);
+            return { added: result.added, skipped: result.skipped + all.length - valid.length, renamed: result.renamed };
+        });
     }
 
-    async clear() {
-        await this.#store.replaceAll([]);
-        this.#commit([]);
+    clear() {
+        return this._serialize(async () => {
+            await this._store.replaceAll([]);
+            this._commit([]);
+        });
     }
 
-    #planReplace(incoming) {
+    // Run changes one at a time, so each one plans against the result of the previous one.
+    _serialize(work) {
+        const run = this._queue.then(work);
+        this._queue = run.catch(() => {});
+        return run;
+    }
+
+    _planReplace(incoming) {
         const cards = [];
         const names = new Set();
         const ids = new Set();
@@ -135,7 +151,7 @@ export class Deck {
 
             const id = source.id !== undefined && source.id !== null && !ids.has(source.id)
                 ? source.id
-                : this.#mintId(ids, incoming);
+                : this._mintId(ids, incoming);
             ids.add(id);
 
             const card = { id, name, image: source.image, number: source.number };
@@ -148,7 +164,7 @@ export class Deck {
         }
 
         // Cards with a missing or clashing number go after the highest kept number.
-        let next = this.#nextNumber(cards.filter((card) => !needsNumber.includes(card)));
+        let next = nextNumber(cards.filter((card) => !needsNumber.includes(card)));
         for (const card of needsNumber) {
             card.number = next++;
         }
@@ -156,11 +172,11 @@ export class Deck {
         return { cards, added: cards.length, skipped, renamed: 0 };
     }
 
-    #planAdd(incoming, renameDuplicates) {
-        const cards = [...this.#cards];
+    _planAdd(incoming, renameDuplicates) {
+        const cards = [...this._cards];
         const names = new Set(cards.map((card) => nameKey(card.name)));
         const ids = new Set(cards.map((card) => card.id));
-        let next = this.#nextNumber(cards);
+        let next = nextNumber(cards);
         let added = 0;
         let skipped = 0;
         let renamed = 0;
@@ -177,7 +193,7 @@ export class Deck {
             }
             names.add(nameKey(name));
 
-            const id = this.#mintId(ids, incoming);
+            const id = this._mintId(ids, incoming);
             ids.add(id);
             cards.push({ id, name, image: source.image, number: next++ });
             added++;
@@ -186,24 +202,24 @@ export class Deck {
         return { cards, added, skipped, renamed };
     }
 
-    #mintId(taken, incoming = []) {
-        const reserved = new Set(incoming.map((card) => card?.id));
-        let id = this.#newId();
+    _mintId(taken, incoming = []) {
+        const reserved = new Set(incoming.map((card) => card && card.id));
+        let id = this._newId();
         while (taken.has(id) || reserved.has(id)) {
-            id = this.#newId();
+            id = this._newId();
         }
         return id;
     }
 
-    #nextNumber(cards) {
-        return cards.reduce((max, card) => Math.max(max, card.number || 0), 0) + 1;
-    }
-
-    #commit(cards) {
-        this.#cards = cards;
+    _commit(cards) {
+        this._cards = cards;
         const snapshot = this.list();
-        this.#listeners.forEach((listener) => listener(snapshot));
+        this._listeners.forEach((listener) => listener(snapshot));
     }
+}
+
+function nextNumber(cards) {
+    return cards.reduce((max, card) => Math.max(max, card.number || 0), 0) + 1;
 }
 
 function uniqueName(name, takenKeys) {
@@ -237,10 +253,8 @@ export class MemoryCardStore {
 // Card store adapter backed by IndexedDB. Each write is one transaction:
 // it resolves when the transaction commits and rejects if it aborts.
 export class IndexedDBCardStore {
-    #db;
-
     constructor(db) {
-        this.#db = db;
+        this._db = db;
     }
 
     static open(dbName = 'LoteriaDB', version = 1) {
@@ -261,29 +275,30 @@ export class IndexedDBCardStore {
 
     loadAll() {
         return new Promise((resolve, reject) => {
-            const request = this.#db.transaction('cards', 'readonly').objectStore('cards').getAll();
+            const request = this._db.transaction('cards', 'readonly').objectStore('cards').getAll();
             request.onsuccess = () => resolve(request.result || []);
             request.onerror = () => reject(request.error);
         });
     }
 
     add(card) {
-        return this.#write((store) => store.add(card));
+        return this._write((store) => store.add(card));
     }
 
     replaceAll(cards) {
-        return this.#write((store) => {
+        return this._write((store) => {
             store.clear();
             cards.forEach((card) => store.add(card));
         });
     }
 
-    #write(work) {
+    _write(work) {
         return new Promise((resolve, reject) => {
-            const transaction = this.#db.transaction('cards', 'readwrite');
+            const transaction = this._db.transaction('cards', 'readwrite');
             transaction.oncomplete = () => resolve();
-            transaction.onerror = () => reject(transaction.error);
-            transaction.onabort = () => reject(transaction.error ?? new Error('Transaction aborted'));
+            // A failed request reaches onerror first; transaction.error is still null then, so use the request's error.
+            transaction.onerror = (event) => reject(event.target.error || transaction.error);
+            transaction.onabort = () => reject(transaction.error || new Error('Transaction aborted'));
             try {
                 work(transaction.objectStore('cards'));
             } catch (error) {

@@ -1,5 +1,5 @@
 // Lotería Game UI. Deck rules and storage live in deck.js.
-import { Deck, DeckError, IndexedDBCardStore } from './deck.js';
+import { Deck, DeckError, IndexedDBCardStore, isImportableCard } from './deck.js';
 
 class LoteriaGame {
     constructor() {
@@ -599,26 +599,15 @@ class LoteriaGame {
             return;
         }
 
-        // Validate cards structure
-        const validCards = importData.cards.filter(card => 
-            card.id && card.name && card.image && card.number !== undefined
-        );
-
-        if (validCards.length === 0) {
+        // The Deck decides which cards are importable; this count is only for the preview.
+        const validCount = importData.cards.filter(isImportableCard).length;
+        if (validCount === 0) {
             alert('No valid cards found in the import file.');
             return;
         }
 
-        if (validCards.length !== importData.cards.length) {
-            const skipped = importData.cards.length - validCards.length;
-            console.warn(`Skipped ${skipped} invalid cards during import validation.`);
-        }
-
-        // Store import data and show preview
-        this.pendingImportData = {
-            ...importData,
-            cards: validCards
-        };
+        // Keep every card so the Deck can report how many it skipped
+        this.pendingImportData = { ...importData, validCount };
 
         this.showImportPreview();
     }
@@ -635,7 +624,7 @@ class LoteriaGame {
             <h4>${data.deckName || 'Imported Deck'}</h4>
             <p><strong>Cards:</strong> ${data.cardCount} cards</p>
             <p><strong>Export Date:</strong> ${exportDate}</p>
-            <p><strong>Valid Cards:</strong> ${data.cards.length}</p>
+            <p><strong>Valid Cards:</strong> ${data.validCount}</p>
             <p><strong>Current Deck:</strong> ${this.cards.length} cards</p>
         `;
         
@@ -668,7 +657,7 @@ class LoteriaGame {
             alert(`Successfully imported ${added} cards!${details.length ? ` (${details.join(', ')})` : ''}`);
         } catch (error) {
             console.error('Import failed:', error);
-            alert('Import failed. Please try again.');
+            alert(error instanceof DeckError ? error.message : 'Import failed. Please try again.');
             this.hideImportProgress();
         }
         
