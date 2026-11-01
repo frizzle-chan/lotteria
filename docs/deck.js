@@ -284,7 +284,14 @@ export class IndexedDBCardStore {
             transaction.oncomplete = () => resolve();
             transaction.onerror = () => reject(transaction.error);
             transaction.onabort = () => reject(transaction.error ?? new Error('Transaction aborted'));
-            work(transaction.objectStore('cards'));
+            try {
+                work(transaction.objectStore('cards'));
+            } catch (error) {
+                // A synchronous throw (e.g. DataCloneError) does not abort the transaction by itself;
+                // without this, an earlier clear() in the same transaction would still commit.
+                transaction.abort();
+                reject(error);
+            }
         });
     }
 }

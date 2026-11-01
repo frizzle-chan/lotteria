@@ -27,6 +27,17 @@ class LoteriaGame {
         this.initializeOfflineSupport();
         this.showSection('game-section');
         this.generateTabla();
+        this.openShortcutSection();
+    }
+
+    // Manifest shortcuts open the app at ?section=upload or ?section=card-draw.
+    openShortcutSection() {
+        const section = new URLSearchParams(window.location.search).get('section');
+        if (section === 'upload') {
+            this.showSection('upload-section');
+        } else if (section === 'card-draw') {
+            this.showCardDrawView();
+        }
     }
 
     // Read-only snapshot of the Deck for rendering.

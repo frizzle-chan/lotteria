@@ -311,17 +311,6 @@
         // Initial status check
         updateNetworkStatus();
 
-        // Handle URL parameters for shortcuts
-        window.addEventListener('load', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const section = urlParams.get('section');
-            
-            if (section === 'upload') {
-                document.getElementById('upload-btn')?.click();
-            } else if (section === 'card-draw') {
-                document.getElementById('card-draw-btn')?.click();
-            }
-        });
     </script>
 </body>
 </html>
