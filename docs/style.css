@@ -1332,50 +1332,95 @@ nav {
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     }
 }
+
+/* Print Styles - only the section being printed, nothing else */
+@page {
+    margin: 0.4in;
 }
 
-/* Print Styles - Optimized for printing tablas */
 @media print {
     body {
         background: white;
         color: black;
-        font-family: 'Times New Roman', serif;
     }
-    
+
     .container {
         max-width: none;
         padding: 0;
         margin: 0;
     }
-    
-    header, .nav-btn, .btn, .game-info, .game-stats, 
-    #upload-section, #deck-section, .section.hidden, .print-info, .print-cards-controls, .no-print {
+
+    header, .btn, .section.hidden, .print-info, .print-cards-controls,
+    .tabla-controls, .no-print, .modal, .offline-indicator {
         display: none !important;
     }
-    
-    #game-section {
-        display: block !important;
-        margin-bottom: 0;
-        padding-bottom: 0 !important;
+
+    .section {
         background: white;
-        padding: 20px;
+        padding: 0;
+        margin: 0;
+        border-radius: 0;
         box-shadow: none;
+        backdrop-filter: none;
     }
-    
-    /* Show only the section being printed */
-    body.printing-tabla #print-cards-section {
+
+    body.printing-tabla main > .section:not(#game-section),
+    body.printing-cards main > .section:not(#print-cards-section) {
         display: none !important;
     }
-    
-    body.printing-cards #game-section {
-        display: none !important;
+
+    /* Tablas: one per page, sized to fit portrait Letter or A4 */
+    .tabla-sheet {
+        break-after: page;
+        break-inside: avoid;
+        margin: 0;
     }
-    
+
+    .tabla-sheet:last-child {
+        break-after: auto;
+    }
+
+    .tabla-label {
+        color: black;
+        font-size: 12px;
+        margin-bottom: 4px;
+    }
+
+    .tabla {
+        max-width: none;
+        width: 6.9in;
+        margin: 0 auto;
+        gap: 6px;
+        padding: 8px;
+        border: 3px solid black;
+    }
+
+    .tabla-cell {
+        border: 2px solid black;
+        border-radius: 2px;
+        padding: 5px;
+        background: white;
+    }
+
+    .tabla-cell img {
+        border: 1px solid black;
+    }
+
+    .tabla-cell .cell-name {
+        font-size: 11px;
+        color: black;
+    }
+
+    .tabla-cell .cell-number {
+        font-size: 9px;
+        color: black;
+    }
+
     /* All cards print layout */
     #print-cards-section h2 {
         display: none;
     }
-    
+
     .all-cards-grid {
         max-width: none;
         width: 100%;
@@ -1384,93 +1429,68 @@ nav {
         border: none;
         grid-template-columns: repeat(4, 1fr);
         gap: 4px;
-        page-break-inside: avoid;
     }
-    
+
     .print-card {
         border: 2px solid black;
         border-radius: 2px;
         padding: 4px;
         background: white;
-        page-break-inside: avoid;
+        break-inside: avoid;
     }
-    
+
     .print-card img {
         border: 1px solid black;
     }
-    
+
     .print-card .card-name {
         font-size: 10px;
         color: black;
     }
-    
+
     .print-card .card-number {
         font-size: 8px;
         color: black;
-    }
-    
-    .game-board h3 {
-        text-align: center;
-        margin-bottom: 20px;
-        font-size: 24px;
-        font-weight: bold;
-        color: black;
-    }
-    
-    .tabla {
-        max-width: none;
-        width: 100%;
-        margin: 0 auto;
-        gap: 6px;
-        padding: 10px;
-        border: 3px solid black;
-        page-break-inside: avoid;
-    }
-    
-    .tabla-cell {
-        border: 2px solid black;
-        border-radius: 2px;
-        padding: 6px;
-        background: white;
-    }
-    
-    .tabla-cell img {
-        border: 1px solid black;
-    }
-    
-    .tabla-cell .cell-name {
-        font-size: 11px;
-        color: black;
-    }
-    
-    .tabla-cell .cell-number {
-        font-size: 9px;
-        color: black;
-    }
-    
-    .tabla-controls {
-        display: none !important;
-    }
-    
-    /* Print button specifically for tablas */
-    .print-tabla-btn {
-        display: inline-block !important;
-        background: #4CAF50;
-        color: white;
-        padding: 10px 20px;
-        border: none;
-        border-radius: 4px;
-        font-size: 16px;
-        cursor: pointer;
     }
 }
 
 /* Tabla controls styling */
 .tabla-controls {
-    text-align: center;
-    margin-top: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
 }
 
-.tabla-controls .btn {
-    margin: 0 10px;
+.tabla-count-label {
+    font-weight: bold;
+    color: #4a5568;
+}
+
+.tabla-count-input {
+    width: 5em;
+    font-size: 16px; /* 16px keeps iOS Safari from zooming on focus */
+    padding: 10px;
+    border: 2px solid #cbd5e0;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.tabla-print-hint {
+    text-align: center;
+    color: #718096;
+    margin-bottom: 20px;
+}
+
+.tabla-sheet {
+    margin-bottom: 30px;
+}
+
+.tabla-label {
+    text-align: center;
+    font-weight: bold;
+    color: #4a5568;
+    margin-bottom: 8px;
 }
