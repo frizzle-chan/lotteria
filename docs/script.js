@@ -672,14 +672,20 @@ class LoteriaGame {
         const data = this.pendingImportData;
         const exportDate = new Date(data.exportDate).toLocaleDateString();
         
+        // Everything below comes from the import file, so set it as text, never as HTML.
         infoDiv.innerHTML = `
-            <h4>${data.deckName || 'Imported Deck'}</h4>
-            <p><strong>Cards:</strong> ${data.cardCount} cards</p>
-            <p><strong>Export Date:</strong> ${exportDate}</p>
-            <p><strong>Valid Cards:</strong> ${data.validCount}</p>
-            <p><strong>Current Deck:</strong> ${this.cards.length} cards</p>
+            <h4></h4>
+            <p><strong>Cards:</strong> <span data-field="card-count"></span></p>
+            <p><strong>Export Date:</strong> <span data-field="export-date"></span></p>
+            <p><strong>Valid Cards:</strong> <span data-field="valid-count"></span></p>
+            <p><strong>Current Deck:</strong> <span data-field="current-count"></span></p>
         `;
-        
+        infoDiv.querySelector('h4').textContent = data.deckName || 'Imported Deck';
+        infoDiv.querySelector('[data-field="card-count"]').textContent = `${data.cardCount} cards`;
+        infoDiv.querySelector('[data-field="export-date"]').textContent = exportDate;
+        infoDiv.querySelector('[data-field="valid-count"]').textContent = data.validCount;
+        infoDiv.querySelector('[data-field="current-count"]').textContent = `${this.cards.length} cards`;
+
         modal.classList.remove('hidden');
     }
 
