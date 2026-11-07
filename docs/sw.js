@@ -1,7 +1,7 @@
 // Lotería PWA Service Worker
 // Version 1.0 - Offline-first strategy with comprehensive caching
 
-const CACHE_NAME = 'loteria-v1.7';
+const CACHE_NAME = 'loteria-v1.8';
 const DATA_CACHE_NAME = 'loteria-data-v1.0';
 
 // Static assets to cache immediately
@@ -31,7 +31,8 @@ self.addEventListener('install', event => {
         caches.open(CACHE_NAME)
             .then(cache => {
                 console.log('[SW] Pre-caching static assets');
-                return cache.addAll(STATIC_CACHE_URLS);
+                // Bypass the HTTP cache so a new version never stores stale files
+                return cache.addAll(STATIC_CACHE_URLS.map(url => new Request(url, { cache: 'reload' })));
             })
             .then(() => {
                 // Force activation of new service worker
