@@ -283,12 +283,17 @@ class LoteriaGame {
             const cellDiv = document.createElement('div');
             cellDiv.className = 'tabla-cell';
             cellDiv.innerHTML = `
-                <img src="${card.image}" alt="${card.name}">
+                <img>
                 <div class="cell-info">
-                    <div class="cell-name">${card.name}</div>
-                    <div class="cell-number">#${card.number}</div>
+                    <div class="cell-name"></div>
+                    <div class="cell-number"></div>
                 </div>
             `;
+            const img = cellDiv.querySelector('img');
+            img.src = card.image;
+            img.alt = card.name;
+            cellDiv.querySelector('.cell-name').textContent = card.name;
+            cellDiv.querySelector('.cell-number').textContent = `#${card.number}`;
             
             // No click event listeners - tabla is for printing only
             tablaContainer.appendChild(cellDiv);
@@ -349,12 +354,17 @@ class LoteriaGame {
             const cardDiv = document.createElement('div');
             cardDiv.className = 'print-card';
             cardDiv.innerHTML = `
-                <img src="${card.image}" alt="${card.name}">
+                <img>
                 <div class="card-info">
-                    <div class="card-name">${card.name}</div>
-                    <div class="card-number">#${card.number}</div>
+                    <div class="card-name"></div>
+                    <div class="card-number"></div>
                 </div>
             `;
+            const img = cardDiv.querySelector('img');
+            img.src = card.image;
+            img.alt = card.name;
+            cardDiv.querySelector('.card-name').textContent = card.name;
+            cardDiv.querySelector('.card-number').textContent = `#${card.number}`;
             allCardsGrid.appendChild(cardDiv);
         });
     }
@@ -511,12 +521,17 @@ class LoteriaGame {
             const historyCard = document.createElement('div');
             historyCard.className = 'history-card';
             historyCard.innerHTML = `
-                <img src="${card.image}" alt="${card.name}">
+                <img>
                 <div class="history-card-info">
-                    <div class="history-card-name">${card.name}</div>
-                    <div class="history-card-number">#${card.number}</div>
+                    <div class="history-card-name"></div>
+                    <div class="history-card-number"></div>
                 </div>
             `;
+            const img = historyCard.querySelector('img');
+            img.src = card.image;
+            img.alt = card.name;
+            historyCard.querySelector('.history-card-name').textContent = card.name;
+            historyCard.querySelector('.history-card-number').textContent = `#${card.number}`;
             historyContainer.appendChild(historyCard);
         });
     }
@@ -657,14 +672,20 @@ class LoteriaGame {
         const data = this.pendingImportData;
         const exportDate = new Date(data.exportDate).toLocaleDateString();
         
+        // Everything below comes from the import file, so set it as text, never as HTML.
         infoDiv.innerHTML = `
-            <h4>${data.deckName || 'Imported Deck'}</h4>
-            <p><strong>Cards:</strong> ${data.cardCount} cards</p>
-            <p><strong>Export Date:</strong> ${exportDate}</p>
-            <p><strong>Valid Cards:</strong> ${data.validCount}</p>
-            <p><strong>Current Deck:</strong> ${this.cards.length} cards</p>
+            <h4></h4>
+            <p><strong>Cards:</strong> <span data-field="card-count"></span></p>
+            <p><strong>Export Date:</strong> <span data-field="export-date"></span></p>
+            <p><strong>Valid Cards:</strong> <span data-field="valid-count"></span></p>
+            <p><strong>Current Deck:</strong> <span data-field="current-count"></span></p>
         `;
-        
+        infoDiv.querySelector('h4').textContent = data.deckName || 'Imported Deck';
+        infoDiv.querySelector('[data-field="card-count"]').textContent = `${data.cardCount} cards`;
+        infoDiv.querySelector('[data-field="export-date"]').textContent = exportDate;
+        infoDiv.querySelector('[data-field="valid-count"]').textContent = data.validCount;
+        infoDiv.querySelector('[data-field="current-count"]').textContent = `${this.cards.length} cards`;
+
         modal.classList.remove('hidden');
     }
 
