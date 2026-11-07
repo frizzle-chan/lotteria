@@ -68,12 +68,15 @@
             <!-- Game Section -->
             <section id="game-section" class="section">
                 <div class="game-board">
-                    <h3 class="no-print">Your Tabla (4×4 Board)</h3>
-                    <div id="tabla" class="tabla"></div>
+                    <h3 class="no-print">Your Tablas (4×4 Boards)</h3>
                     <div class="tabla-controls">
-                        <button id="generate-tabla-btn" class="btn">Generate New Tabla</button>
-                        <button id="print-tabla-btn" class="btn btn-primary print-tabla-btn">Print Tabla</button>
+                        <label for="tabla-count" class="tabla-count-label">How many tablas?</label>
+                        <input type="number" id="tabla-count" class="tabla-count-input" min="1" max="100" value="1" inputmode="numeric">
+                        <button id="generate-tabla-btn" class="btn">Generate Tablas</button>
+                        <button id="print-tabla-btn" class="btn btn-primary print-tabla-btn">Print Tablas</button>
                     </div>
+                    <p class="tabla-print-hint no-print">Each tabla prints on its own page.</p>
+                    <div id="tablas" class="tablas"></div>
                 </div>
             </section>
 

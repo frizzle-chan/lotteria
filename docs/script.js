@@ -1,10 +1,11 @@
 // Lotería Game UI. Deck rules and storage live in deck.js.
 import { Deck, DeckError, IndexedDBCardStore, isImportableCard } from './deck.js';
+import { generateTablas, MAX_TABLAS } from './tabla.js';
 
 class LoteriaGame {
     constructor() {
         this.deck = null;
-        this.currentTabla = [];
+        this.tablas = [];
         this.drawnCards = [];
         this.drawnCardsHistory = [];
         this.isFullscreen = false;
@@ -41,6 +42,13 @@ class LoteriaGame {
             this.renderDrawnCardContent(this.drawnCardsHistory[0]);
         }
         this.renderDrawnCardsHistory();
+
+        // Tablas hold copies too; refresh names and drop cards that are gone.
+        if (this.tablas.length > 0) {
+            const stillComplete = this.tablas.every((tabla) => tabla.every((card) => byId.has(card.id)));
+            this.tablas = stillComplete ? this.tablas.map((tabla) => tabla.map((card) => byId.get(card.id))) : [];
+            this.renderTablas();
+        }
 
         if (this.isSectionVisible('print-cards-section')) {
             this.renderAllCardsForPrint();
@@ -94,6 +102,7 @@ class LoteriaGame {
         document.getElementById('draw-card-btn')?.addEventListener('click', () => this.drawCard());
         document.getElementById('generate-tabla-btn').addEventListener('click', () => this.generateTabla());
         document.getElementById('print-tabla-btn').addEventListener('click', () => this.printTabla());
+        document.getElementById('tabla-count').max = MAX_TABLAS;
 
         // Print all cards controls
         document.getElementById('print-all-cards-btn').addEventListener('click', () => this.printAllCards());
@@ -260,63 +269,71 @@ class LoteriaGame {
         setTimeout(() => msgDiv.remove(), 3000);
     }
 
-    // Generate a new tabla (4x4 board) optimized for printing
+    // How many Tablas to generate, from the count field (clamped to 1..MAX_TABLAS).
+    readTablaCount() {
+        const input = document.getElementById('tabla-count');
+        const count = Math.min(MAX_TABLAS, Math.max(1, Math.round(Number(input.value)) || 1));
+        input.value = count;
+        return count;
+    }
+
+    // Generate a fresh set of Tablas (4x4 boards) for printing
     generateTabla() {
         if (this.cards.length < 16) {
             alert('You need at least 16 cards to generate a tabla. Please upload more cards.');
             return;
         }
-
-        // Shuffle cards and select 16 for the tabla
-        const shuffledCards = [...this.cards].sort(() => Math.random() - 0.5);
-        this.currentTabla = shuffledCards.slice(0, 16);
-        
-        this.renderTabla();
+        this.tablas = generateTablas(this.cards, this.readTablaCount());
+        this.renderTablas();
     }
 
-    // Render the tabla (optimized for printing, no interactivity)
-    renderTabla() {
-        const tablaContainer = document.getElementById('tabla');
-        tablaContainer.innerHTML = '';
+    // Render every Tabla, one sheet each (optimized for printing, no interactivity)
+    renderTablas() {
+        const container = document.getElementById('tablas');
+        container.replaceChildren();
 
-        this.currentTabla.forEach((card, index) => {
-            const cellDiv = document.createElement('div');
-            cellDiv.className = 'tabla-cell';
-            cellDiv.innerHTML = `
-                <img>
-                <div class="cell-info">
-                    <div class="cell-name"></div>
-                    <div class="cell-number"></div>
-                </div>
-            `;
-            const img = cellDiv.querySelector('img');
-            img.src = card.image;
-            img.alt = card.name;
-            cellDiv.querySelector('.cell-name').textContent = card.name;
-            cellDiv.querySelector('.cell-number').textContent = `#${card.number}`;
-            
-            // No click event listeners - tabla is for printing only
-            tablaContainer.appendChild(cellDiv);
+        this.tablas.forEach((tabla, index) => {
+            const sheet = document.createElement('div');
+            sheet.className = 'tabla-sheet';
+
+            const label = document.createElement('div');
+            label.className = 'tabla-label';
+            label.textContent = this.tablas.length > 1 ? `Tabla ${index + 1} of ${this.tablas.length}` : 'Tabla';
+
+            const grid = document.createElement('div');
+            grid.className = 'tabla';
+            for (const card of tabla) {
+                const cell = document.createElement('div');
+                cell.className = 'tabla-cell';
+                const img = document.createElement('img');
+                img.src = card.image;
+                img.alt = card.name;
+                const info = document.createElement('div');
+                info.className = 'cell-info';
+                const name = document.createElement('div');
+                name.className = 'cell-name';
+                name.textContent = card.name;
+                const number = document.createElement('div');
+                number.className = 'cell-number';
+                number.textContent = `#${card.number}`;
+                info.append(name, number);
+                cell.append(img, info);
+                grid.append(cell);
+            }
+
+            sheet.append(label, grid);
+            container.append(sheet);
         });
     }
 
-    // Print tabla function
+    // Print every generated Tabla, one per page
     printTabla() {
-        if (this.currentTabla.length === 0) {
-            alert('No tabla available to print. Please generate a tabla first.');
+        if (this.tablas.length === 0) {
+            alert('No tablas available to print. Please generate tablas first.');
             return;
         }
 
-        // Add class to body to identify what we're printing
-        document.body.classList.add('printing-tabla');
-        
-        // Print the page
         window.print();
-        
-        // Remove the class after printing
-        setTimeout(() => {
-            document.body.classList.remove('printing-tabla');
-        }, 1000);
     }
 
     // Generate new tabla (simplified for printing focus)
@@ -376,16 +393,7 @@ class LoteriaGame {
             return;
         }
 
-        // Add class to body to identify what we're printing
-        document.body.classList.add('printing-cards');
-        
-        // Print the page
         window.print();
-        
-        // Remove the class after printing
-        setTimeout(() => {
-            document.body.classList.remove('printing-cards');
-        }, 1000);
     }
 
     // Show card draw view
@@ -1065,7 +1073,8 @@ class LoteriaGame {
         if (confirm('Are you sure you want to delete all cards? This action cannot be undone.')) {
             try {
                 await this.deck.clear();
-                this.currentTabla = [];
+                this.tablas = [];
+                this.renderTablas();
                 this.renderDeckView();
                 this.showSuccessMessage('All cards have been deleted.');
             } catch (error) {

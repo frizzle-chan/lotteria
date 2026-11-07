@@ -1,7 +1,7 @@
 // Lotería PWA Service Worker
 // Version 1.0 - Offline-first strategy with comprehensive caching
 
-const CACHE_NAME = 'loteria-v1.4';
+const CACHE_NAME = 'loteria-v1.5';
 const DATA_CACHE_NAME = 'loteria-data-v1.0';
 
 // Static assets to cache immediately
@@ -10,6 +10,7 @@ const STATIC_CACHE_URLS = [
     './index.html',
     './script.js',
     './deck.js',
+    './tabla.js',
     './style.css',
     './manifest.json',
     // Fallback pages
