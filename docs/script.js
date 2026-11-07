@@ -283,12 +283,17 @@ class LoteriaGame {
             const cellDiv = document.createElement('div');
             cellDiv.className = 'tabla-cell';
             cellDiv.innerHTML = `
-                <img src="${card.image}" alt="${card.name}">
+                <img>
                 <div class="cell-info">
-                    <div class="cell-name">${card.name}</div>
-                    <div class="cell-number">#${card.number}</div>
+                    <div class="cell-name"></div>
+                    <div class="cell-number"></div>
                 </div>
             `;
+            const img = cellDiv.querySelector('img');
+            img.src = card.image;
+            img.alt = card.name;
+            cellDiv.querySelector('.cell-name').textContent = card.name;
+            cellDiv.querySelector('.cell-number').textContent = `#${card.number}`;
             
             // No click event listeners - tabla is for printing only
             tablaContainer.appendChild(cellDiv);
@@ -349,12 +354,17 @@ class LoteriaGame {
             const cardDiv = document.createElement('div');
             cardDiv.className = 'print-card';
             cardDiv.innerHTML = `
-                <img src="${card.image}" alt="${card.name}">
+                <img>
                 <div class="card-info">
-                    <div class="card-name">${card.name}</div>
-                    <div class="card-number">#${card.number}</div>
+                    <div class="card-name"></div>
+                    <div class="card-number"></div>
                 </div>
             `;
+            const img = cardDiv.querySelector('img');
+            img.src = card.image;
+            img.alt = card.name;
+            cardDiv.querySelector('.card-name').textContent = card.name;
+            cardDiv.querySelector('.card-number').textContent = `#${card.number}`;
             allCardsGrid.appendChild(cardDiv);
         });
     }
@@ -511,12 +521,17 @@ class LoteriaGame {
             const historyCard = document.createElement('div');
             historyCard.className = 'history-card';
             historyCard.innerHTML = `
-                <img src="${card.image}" alt="${card.name}">
+                <img>
                 <div class="history-card-info">
-                    <div class="history-card-name">${card.name}</div>
-                    <div class="history-card-number">#${card.number}</div>
+                    <div class="history-card-name"></div>
+                    <div class="history-card-number"></div>
                 </div>
             `;
+            const img = historyCard.querySelector('img');
+            img.src = card.image;
+            img.alt = card.name;
+            historyCard.querySelector('.history-card-name').textContent = card.name;
+            historyCard.querySelector('.history-card-number').textContent = `#${card.number}`;
             historyContainer.appendChild(historyCard);
         });
     }
