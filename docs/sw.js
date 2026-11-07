@@ -1,7 +1,7 @@
 // Lotería PWA Service Worker
 // Version 1.0 - Offline-first strategy with comprehensive caching
 
-const CACHE_NAME = 'loteria-v1.1';
+const CACHE_NAME = 'loteria-v1.2';
 const DATA_CACHE_NAME = 'loteria-data-v1.0';
 
 // Static assets to cache immediately

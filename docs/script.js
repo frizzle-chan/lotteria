@@ -946,12 +946,52 @@ class LoteriaGame {
             const cardDiv = document.createElement('div');
             cardDiv.className = 'deck-card';
             cardDiv.innerHTML = `
-                <img src="${card.image}" alt="${card.name}">
-                <div class="card-name">${card.name}</div>
-                <div class="card-number">#${card.number}</div>
+                <img alt="">
+                <input type="text" class="card-name card-name-input" maxlength="30" aria-label="Card name">
+                <div class="card-number"></div>
             `;
+            const img = cardDiv.querySelector('img');
+            img.src = card.image;
+            img.alt = card.name;
+            cardDiv.querySelector('.card-number').textContent = `#${card.number}`;
+
+            const nameInput = cardDiv.querySelector('.card-name-input');
+            nameInput.value = card.name;
+            nameInput.dataset.saved = card.name;
+            nameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    nameInput.blur();
+                } else if (e.key === 'Escape') {
+                    nameInput.value = nameInput.dataset.saved;
+                    nameInput.blur();
+                }
+            });
+            nameInput.addEventListener('change', () => this.renameCard(card.id, nameInput, img));
             deckGrid.appendChild(cardDiv);
         });
+    }
+
+    // Rename a card from its name field in the deck view; on failure, put the saved name back.
+    async renameCard(id, nameInput, img) {
+        const saved = nameInput.dataset.saved;
+        try {
+            const card = await this.deck.rename(id, nameInput.value);
+            nameInput.value = card.name;
+            nameInput.dataset.saved = card.name;
+            img.alt = card.name;
+            if (card.name !== saved) {
+                this.showSuccessMessage(`Renamed "${saved}" to "${card.name}"`);
+            }
+        } catch (error) {
+            nameInput.value = saved;
+            if (error instanceof DeckError) {
+                alert(error.message);
+            } else {
+                console.error('Failed to rename card:', error);
+                alert(`Failed to rename card "${saved}". Please try again.`);
+            }
+        }
     }
 
     // Delete every card in the Deck

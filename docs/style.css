@@ -348,6 +348,30 @@ nav {
     margin-bottom: 5px;
 }
 
+.deck-card .card-name-input {
+    display: block;
+    width: 100%;
+    font: inherit;
+    font-weight: bold;
+    font-size: 16px; /* 16px keeps iOS Safari from zooming on focus */
+    text-align: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    padding: 4px 6px;
+    cursor: text;
+}
+
+.deck-card .card-name-input:hover {
+    border-color: #e2e8f0;
+}
+
+.deck-card .card-name-input:focus {
+    outline: none;
+    border-color: #667eea;
+    background: #f7fafc;
+}
+
 /* Print All Cards Section */
 .print-info {
     background: #f8f9fa;

@@ -7,7 +7,7 @@
 //
 // Storage sits behind a card store seam with two adapters:
 //   IndexedDBCardStore (browser) and MemoryCardStore (tests).
-// A card store implements: loadAll(), add(card), replaceAll(cards).
+// A card store implements: loadAll(), add(card), put(card), replaceAll(cards).
 
 export const IMPORT_MODES = Object.freeze(['replace', 'merge', 'append']);
 
@@ -92,6 +92,33 @@ export class Deck {
 
             await this.#store.add(card);
             this.#commit([...this.#cards, card]);
+            return { ...card };
+        });
+    }
+
+    // Rename the card with this id. Returns the updated card.
+    // Throws DeckError('not-found' | 'empty-name' | 'duplicate-name'); store errors propagate unchanged.
+    rename(id, name) {
+        return this.#serialize(async () => {
+            const index = this.#cards.findIndex((card) => card.id === id);
+            if (index === -1) {
+                throw new DeckError('That card is no longer in the deck', 'not-found');
+            }
+            const trimmed = typeof name === 'string' ? name.trim() : '';
+            if (!trimmed) {
+                throw new DeckError('Please enter a card name', 'empty-name');
+            }
+            const key = nameKey(trimmed);
+            if (this.#cards.some((card) => card.id !== id && nameKey(card.name) === key)) {
+                throw new DeckError(`A card named "${trimmed}" already exists`, 'duplicate-name');
+            }
+
+            const card = { ...this.#cards[index], name: trimmed };
+            if (card.name === this.#cards[index].name) {
+                return { ...card };
+            }
+            await this.#store.put(card);
+            this.#commit(this.#cards.map((c, i) => (i === index ? card : c)));
             return { ...card };
         });
     }
@@ -250,6 +277,15 @@ export class MemoryCardStore {
         this.cards.push({ ...card });
     }
 
+    async put(card) {
+        const index = this.cards.findIndex((c) => c.id === card.id);
+        if (index === -1) {
+            this.cards.push({ ...card });
+        } else {
+            this.cards[index] = { ...card };
+        }
+    }
+
     async replaceAll(cards) {
         this.cards = cards.map((card) => ({ ...card }));
     }
@@ -290,6 +326,10 @@ export class IndexedDBCardStore {
 
     add(card) {
         return this.#write((store) => store.add(card));
+    }
+
+    put(card) {
+        return this.#write((store) => store.put(card));
     }
 
     replaceAll(cards) {

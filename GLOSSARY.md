@@ -2,7 +2,7 @@
 
 - **Card** — one picture in the game: `{ id, name, image, number }`. Names are unique ignoring case; numbers are unique and are what gets printed on the card.
 - **Deck** — the player's full set of Cards and the module that owns its rules (`docs/deck.js`). All changes to Cards go through it.
-- **Card store** — where the Deck saves Cards. Implements `loadAll()`, `add(card)`, `replaceAll(cards)`. Adapters: `IndexedDBCardStore` (browser), `MemoryCardStore` (tests).
+- **Card store** — where the Deck saves Cards. Implements `loadAll()`, `add(card)`, `put(card)`, `replaceAll(cards)`. Adapters: `IndexedDBCardStore` (browser), `MemoryCardStore` (tests).
 - **Deck file** — the exported JSON (`version`, `deckName`, `exportDate`, `cardCount`, `cards`) used to move a Deck between devices.
 - **Import mode** — how a Deck file joins the Deck:
   - *Replace*: the file's Cards become the Deck, keeping their ids and numbers where unique.

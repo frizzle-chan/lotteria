@@ -15,6 +15,7 @@ async function deckWith(names = []) {
 
 class FailingStore extends MemoryCardStore {
     async add() { throw new Error('disk full'); }
+    async put() { throw new Error('disk full'); }
     async replaceAll() { throw new Error('disk full'); }
 }
 
@@ -173,4 +174,39 @@ test('an import with no valid cards throws and leaves the deck alone', async () 
     }
     assert.deepEqual(deck.list().map((c) => c.name), ['La Luna']);
     assert.equal(store.cards.length, 1);
+});
+
+test('rename changes the name, keeps id and number, and saves it', async () => {
+    const store = new MemoryCardStore();
+    const deck = await Deck.open(store, { newId });
+    const card = await deck.add('La Luna', 'img');
+    const seen = [];
+    deck.subscribe((cards) => seen.push(cards.map((c) => c.name)));
+
+    const renamed = await deck.rename(card.id, '  La Luna Llena ');
+    assert.deepEqual(renamed, { ...card, name: 'La Luna Llena' });
+    assert.deepEqual(deck.list(), [renamed]);
+    assert.deepEqual(store.cards, [renamed]);
+    assert.deepEqual(seen, [['La Luna Llena']]);
+});
+
+test('rename allows changing only the case of a name', async () => {
+    const deck = await deckWith(['la luna']);
+    const [card] = deck.list();
+    assert.equal((await deck.rename(card.id, 'La Luna')).name, 'La Luna');
+});
+
+test('rename rejects empty, duplicate and unknown cards', async () => {
+    const deck = await deckWith(['La Luna', 'El Sol']);
+    const [luna] = deck.list();
+    await assert.rejects(deck.rename(luna.id, '  '), { code: 'empty-name' });
+    await assert.rejects(deck.rename(luna.id, 'el sol'), { code: 'duplicate-name' });
+    await assert.rejects(deck.rename('missing', 'El Gallo'), { code: 'not-found' });
+    assert.deepEqual(deck.list().map((c) => c.name), ['La Luna', 'El Sol']);
+});
+
+test('a failed rename leaves the deck unchanged', async () => {
+    const deck = await Deck.open(new FailingStore([{ id: 'x', name: 'El Sol', image: 'i', number: 1 }]), { newId });
+    await assert.rejects(deck.rename('x', 'La Luna'), /disk full/);
+    assert.equal(deck.list()[0].name, 'El Sol');
 });
