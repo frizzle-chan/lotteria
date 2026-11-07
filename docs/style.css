@@ -355,21 +355,23 @@ nav {
     font-weight: bold;
     font-size: 16px; /* 16px keeps iOS Safari from zooming on focus */
     text-align: center;
+    color: #4a5568;
     background: transparent;
-    border: 1px solid transparent;
-    border-radius: 5px;
+    border: none;
+    border-bottom: 1px dashed #a0aec0;
+    border-radius: 5px 5px 0 0;
     padding: 4px 6px;
-    cursor: text;
-}
-
-.deck-card .card-name-input:hover {
-    border-color: #e2e8f0;
 }
 
 .deck-card .card-name-input:focus {
     outline: none;
-    border-color: #667eea;
+    border-bottom: 2px solid #667eea;
     background: #f7fafc;
+}
+
+.deck-hint {
+    color: #718096;
+    margin-bottom: 15px;
 }
 
 /* Print All Cards Section */

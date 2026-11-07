@@ -210,3 +210,29 @@ test('a failed rename leaves the deck unchanged', async () => {
     await assert.rejects(deck.rename('x', 'La Luna'), /disk full/);
     assert.equal(deck.list()[0].name, 'El Sol');
 });
+
+test('renaming to the same name does not save or notify', async () => {
+    let puts = 0;
+    class CountingStore extends MemoryCardStore {
+        async put(card) { puts++; return super.put(card); }
+    }
+    const deck = await Deck.open(new CountingStore(), { newId });
+    const card = await deck.add('La Luna', 'img');
+    const seen = [];
+    deck.subscribe((cards) => seen.push(cards));
+
+    assert.deepEqual(await deck.rename(card.id, ' La Luna  '), card);
+    assert.equal(puts, 0);
+    assert.deepEqual(seen, []);
+    await assert.rejects(deck.rename(card.id, null), { code: 'empty-name' });
+});
+
+test('queued renames check names against earlier renames', async () => {
+    const deck = await deckWith(['La Luna', 'El Sol']);
+    const [luna, sol] = deck.list();
+    const first = deck.rename(luna.id, 'El Gallo');
+    const second = deck.rename(sol.id, 'el gallo');
+    await first;
+    await assert.rejects(second, { code: 'duplicate-name' });
+    assert.deepEqual(deck.list().map((c) => c.name), ['El Gallo', 'El Sol']);
+});

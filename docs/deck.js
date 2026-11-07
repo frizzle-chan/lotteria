@@ -113,10 +113,10 @@ export class Deck {
                 throw new DeckError(`A card named "${trimmed}" already exists`, 'duplicate-name');
             }
 
-            const card = { ...this.#cards[index], name: trimmed };
-            if (card.name === this.#cards[index].name) {
-                return { ...card };
+            if (trimmed === this.#cards[index].name) {
+                return { ...this.#cards[index] };
             }
+            const card = { ...this.#cards[index], name: trimmed };
             await this.#store.put(card);
             this.#commit(this.#cards.map((c, i) => (i === index ? card : c)));
             return { ...card };
