@@ -102,6 +102,7 @@ class LoteriaGame {
         document.getElementById('draw-card-btn')?.addEventListener('click', () => this.drawCard());
         document.getElementById('generate-tabla-btn').addEventListener('click', () => this.generateTabla());
         document.getElementById('print-tabla-btn').addEventListener('click', () => this.printTabla());
+        document.getElementById('tabla-count').max = MAX_TABLAS;
 
         // Print all cards controls
         document.getElementById('print-all-cards-btn').addEventListener('click', () => this.printAllCards());
@@ -269,7 +270,7 @@ class LoteriaGame {
     }
 
     // How many Tablas to generate, from the count field (clamped to 1..MAX_TABLAS).
-    get tablaCount() {
+    readTablaCount() {
         const input = document.getElementById('tabla-count');
         const count = Math.min(MAX_TABLAS, Math.max(1, Math.round(Number(input.value)) || 1));
         input.value = count;
@@ -282,7 +283,7 @@ class LoteriaGame {
             alert('You need at least 16 cards to generate a tabla. Please upload more cards.');
             return;
         }
-        this.tablas = generateTablas(this.cards, this.tablaCount);
+        this.tablas = generateTablas(this.cards, this.readTablaCount());
         this.renderTablas();
     }
 
@@ -332,8 +333,6 @@ class LoteriaGame {
             return;
         }
 
-        document.body.classList.add('printing-tabla');
-        window.addEventListener('afterprint', () => document.body.classList.remove('printing-tabla'), { once: true });
         window.print();
     }
 
@@ -389,8 +388,6 @@ class LoteriaGame {
             return;
         }
 
-        document.body.classList.add('printing-cards');
-        window.addEventListener('afterprint', () => document.body.classList.remove('printing-cards'), { once: true });
         window.print();
     }
 

@@ -1333,6 +1333,47 @@ nav {
     }
 }
 
+/* Tabla controls styling */
+.tabla-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.tabla-count-label {
+    font-weight: bold;
+    color: #4a5568;
+}
+
+.tabla-count-input {
+    width: 5em;
+    font-size: 16px; /* 16px keeps iOS Safari from zooming on focus */
+    padding: 10px;
+    border: 2px solid #cbd5e0;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.tabla-print-hint {
+    text-align: center;
+    color: #718096;
+    margin-bottom: 20px;
+}
+
+.tabla-sheet {
+    margin-bottom: 30px;
+}
+
+.tabla-label {
+    text-align: center;
+    font-weight: bold;
+    color: #4a5568;
+    margin-bottom: 8px;
+}
+
 /* Print Styles - only the section being printed, nothing else */
 @page {
     margin: 0.4in;
@@ -1351,7 +1392,7 @@ nav {
     }
 
     header, .btn, .section.hidden, .print-info, .print-cards-controls,
-    .tabla-controls, .no-print, .modal, .offline-indicator {
+    .tabla-controls, .no-print, .modal, .offline-indicator, .install-banner {
         display: none !important;
     }
 
@@ -1362,11 +1403,6 @@ nav {
         border-radius: 0;
         box-shadow: none;
         backdrop-filter: none;
-    }
-
-    body.printing-tabla main > .section:not(#game-section),
-    body.printing-cards main > .section:not(#print-cards-section) {
-        display: none !important;
     }
 
     /* Tablas: one per page, sized to fit portrait Letter or A4 */
@@ -1452,45 +1488,4 @@ nav {
         font-size: 8px;
         color: black;
     }
-}
-
-/* Tabla controls styling */
-.tabla-controls {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 10px;
-}
-
-.tabla-count-label {
-    font-weight: bold;
-    color: #4a5568;
-}
-
-.tabla-count-input {
-    width: 5em;
-    font-size: 16px; /* 16px keeps iOS Safari from zooming on focus */
-    padding: 10px;
-    border: 2px solid #cbd5e0;
-    border-radius: 8px;
-    text-align: center;
-}
-
-.tabla-print-hint {
-    text-align: center;
-    color: #718096;
-    margin-bottom: 20px;
-}
-
-.tabla-sheet {
-    margin-bottom: 30px;
-}
-
-.tabla-label {
-    text-align: center;
-    font-weight: bold;
-    color: #4a5568;
-    margin-bottom: 8px;
 }

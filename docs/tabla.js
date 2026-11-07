@@ -36,7 +36,9 @@ export function generateTablas(cards, count, random = Math.random) {
             const layout = tabla.map((card) => card.id).join('|');
             const set = tabla.map((card) => card.id).sort().join('|');
             // Prefer a new set of Cards; settle for a new arrangement once sets run out.
-            const fresh = attempt < ATTEMPTS / 2 ? !usedSets.has(set) : !usedLayouts.has(layout);
+            // With exactly 16 cards every Tabla has the same set, so go straight to layouts.
+            const wantNewSet = cards.length > TABLA_SIZE && attempt < ATTEMPTS / 2;
+            const fresh = wantNewSet ? !usedSets.has(set) : !usedLayouts.has(layout);
             if (fresh) break;
         }
         usedSets.add(tabla.map((card) => card.id).sort().join('|'));
