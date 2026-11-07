@@ -21,13 +21,39 @@ class LoteriaGame {
             alert('Could not open card storage. Cards cannot be saved in this browser.');
             return;
         }
-        this.deck.subscribe(() => this.updateDeckCount());
+        this.deck.subscribe((cards) => this.handleDeckChange(cards));
         this.initializeEventListeners();
         this.initializeDragAndDrop();
         this.initializeOfflineSupport();
         this.showSection('game-section');
         this.generateTabla();
         this.openShortcutSection();
+    }
+
+    // Keep every view that shows Cards in step with the Deck (e.g. after a rename).
+    handleDeckChange(cards) {
+        this.updateDeckCount();
+
+        // Drawn cards are copies; refresh them so a renamed card shows its new name.
+        const byId = new Map(cards.map((card) => [card.id, card]));
+        this.drawnCardsHistory = this.drawnCardsHistory.map((card) => byId.get(card.id) || card);
+        if (this.drawnCardsHistory.length > 0) {
+            this.renderDrawnCardContent(this.drawnCardsHistory[0]);
+        }
+        this.renderDrawnCardsHistory();
+
+        if (this.isSectionVisible('print-cards-section')) {
+            this.renderAllCardsForPrint();
+        }
+        // Don't re-render the deck under someone who is editing a card name.
+        const deckGrid = document.getElementById('deck-grid');
+        if (this.isSectionVisible('deck-section') && !deckGrid.contains(document.activeElement)) {
+            this.renderDeckView();
+        }
+    }
+
+    isSectionVisible(sectionId) {
+        return !document.getElementById(sectionId).classList.contains('hidden');
     }
 
     // Manifest shortcuts open the app at ?section=upload or ?section=card-draw.
@@ -398,16 +424,7 @@ class LoteriaGame {
 
     // Display the drawn card in the main area
     displayDrawnCard(card) {
-        const mainDrawnCard = document.getElementById('main-drawn-card');
-        mainDrawnCard.innerHTML = `
-            <div class="drawn-card-display">
-                <img src="${card.image}" alt="${card.name}">
-                <div class="drawn-card-info">
-                    <div class="drawn-card-name">${card.name}</div>
-                    <div class="drawn-card-number">#${card.number}</div>
-                </div>
-            </div>
-        `;
+        const mainDrawnCard = this.renderDrawnCardContent(card);
 
         // Add animation effect
         mainDrawnCard.style.transform = 'scale(0.8)';
@@ -418,6 +435,26 @@ class LoteriaGame {
             mainDrawnCard.style.transform = 'scale(1)';
             mainDrawnCard.style.opacity = '1';
         }, 100);
+    }
+
+    // Fill the main draw area with a card, without animation. Returns the container.
+    renderDrawnCardContent(card) {
+        const mainDrawnCard = document.getElementById('main-drawn-card');
+        mainDrawnCard.innerHTML = `
+            <div class="drawn-card-display">
+                <img>
+                <div class="drawn-card-info">
+                    <div class="drawn-card-name"></div>
+                    <div class="drawn-card-number"></div>
+                </div>
+            </div>
+        `;
+        const img = mainDrawnCard.querySelector('img');
+        img.src = card.image;
+        img.alt = card.name;
+        mainDrawnCard.querySelector('.drawn-card-name').textContent = card.name;
+        mainDrawnCard.querySelector('.drawn-card-number').textContent = `#${card.number}`;
+        return mainDrawnCard;
     }
 
     // Reset card draw session
@@ -946,12 +983,60 @@ class LoteriaGame {
             const cardDiv = document.createElement('div');
             cardDiv.className = 'deck-card';
             cardDiv.innerHTML = `
-                <img src="${card.image}" alt="${card.name}">
-                <div class="card-name">${card.name}</div>
-                <div class="card-number">#${card.number}</div>
+                <img alt="">
+                <input type="text" class="card-name card-name-input" maxlength="30"
+                    enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false">
+                <div class="card-number"></div>
             `;
+            const img = cardDiv.querySelector('img');
+            img.src = card.image;
+            img.alt = card.name;
+            cardDiv.querySelector('.card-number').textContent = `#${card.number}`;
+
+            const nameInput = cardDiv.querySelector('.card-name-input');
+            nameInput.value = card.name;
+            nameInput.dataset.saved = card.name;
+            nameInput.setAttribute('aria-label', `Name of card #${card.number}`);
+            nameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    nameInput.blur();
+                } else if (e.key === 'Escape') {
+                    nameInput.value = nameInput.dataset.saved;
+                    nameInput.blur();
+                }
+            });
+            nameInput.addEventListener('change', () => this.renameCard(card.id, nameInput, img));
             deckGrid.appendChild(cardDiv);
         });
+    }
+
+    // Rename a card from its name field in the deck view; on failure, put the saved name back.
+    async renameCard(id, nameInput, img) {
+        try {
+            const previous = nameInput.dataset.saved;
+            const card = await this.deck.rename(id, nameInput.value);
+            nameInput.dataset.saved = card.name;
+            if (document.activeElement !== nameInput) {
+                nameInput.value = card.name;
+            }
+            img.alt = card.name;
+            if (card.name !== previous) {
+                this.showSuccessMessage(`Renamed "${previous}" to "${card.name}"`);
+            }
+        } catch (error) {
+            // Read the saved name now: an earlier rename of this card may have finished meanwhile.
+            const saved = nameInput.dataset.saved;
+            if (document.activeElement !== nameInput) {
+                nameInput.value = saved;
+            }
+            if (error instanceof DeckError) {
+                alert(error.message);
+            } else {
+                console.error('Failed to rename card:', error);
+                alert(`Failed to rename card "${saved}". Please try again.`);
+            }
+        }
     }
 
     // Delete every card in the Deck
