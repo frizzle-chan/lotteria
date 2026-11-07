@@ -27,7 +27,7 @@ class LoteriaGame {
         this.initializeDragAndDrop();
         this.initializeOfflineSupport();
         this.showSection('game-section');
-        this.generateTabla();
+        this.showTablas();
         this.openShortcutSection();
     }
 
@@ -47,8 +47,9 @@ class LoteriaGame {
         if (this.tablas.length > 0) {
             const stillComplete = this.tablas.every((tabla) => tabla.every((card) => byId.has(card.id)));
             this.tablas = stillComplete ? this.tablas.map((tabla) => tabla.map((card) => byId.get(card.id))) : [];
-            this.renderTablas();
         }
+        // Also refreshes the "need N cards" notice when there are no tablas.
+        this.renderTablas();
 
         if (this.isSectionVisible('print-cards-section')) {
             this.renderAllCardsForPrint();
@@ -277,7 +278,16 @@ class LoteriaGame {
         return count;
     }
 
-    // Generate a fresh set of Tablas (4x4 boards) for printing
+    // Show the Tablas: keep any already generated (they may be printed), and
+    // only generate when there are none yet. A small Deck gets an inline notice.
+    showTablas() {
+        if (this.tablas.length === 0 && this.cards.length >= 16) {
+            this.tablas = generateTablas(this.cards, this.readTablaCount());
+        }
+        this.renderTablas();
+    }
+
+    // Generate a fresh set of Tablas (4x4 boards) for printing (the explicit button)
     generateTabla() {
         if (this.cards.length < 16) {
             alert('You need at least 16 cards to generate a tabla. Please upload more cards.');
@@ -291,6 +301,14 @@ class LoteriaGame {
     renderTablas() {
         const container = document.getElementById('tablas');
         container.replaceChildren();
+
+        if (this.tablas.length === 0 && this.cards.length < 16) {
+            const notice = document.createElement('p');
+            notice.className = 'tabla-notice no-print';
+            notice.textContent = `Add at least 16 cards to make tablas. You have ${this.cards.length}.`;
+            container.append(notice);
+            return;
+        }
 
         this.tablas.forEach((tabla, index) => {
             const sheet = document.createElement('div');
@@ -336,10 +354,10 @@ class LoteriaGame {
         window.print();
     }
 
-    // Generate new tabla (simplified for printing focus)
+    // Open the Tabla view from the nav, keeping existing tablas
     newGame() {
         this.showSection('game-section');
-        this.generateTabla();
+        this.showTablas();
     }
 
     // Show deck view
